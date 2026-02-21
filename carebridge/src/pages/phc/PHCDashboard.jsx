@@ -38,6 +38,8 @@ import {
     AlertCircle,
     Activity,
     ArrowUpDown,
+    Timer,
+    RefreshCw,
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
@@ -111,6 +113,24 @@ export default function PHCDashboard() {
     const villages = useMemo(() => getUniqueVillages(allVisits), [allVisits]);
     const ashaNames = useMemo(() => getUniqueASHANames(allVisits), [allVisits]);
     const ashaStats = useMemo(() => calculateASHAStats(allVisits), [allVisits]);
+
+    // Average response time compute
+    const avgResponseTime = useMemo(() => {
+        const reviewed = allVisits.filter(v => v.responseTimeMs && v.responseTimeMs > 0);
+        if (reviewed.length === 0) return null;
+        const total = reviewed.reduce((acc, v) => acc + v.responseTimeMs, 0);
+        return total / reviewed.length;
+    }, [allVisits]);
+
+    // Repeat escalation patient IDs
+    const repeatPatients = useMemo(() => {
+        const counts = {};
+        allVisits.filter(v => v.status === 'Pending PHC Review').forEach(v => {
+            const pid = v.patientId || v.patientDocId;
+            if (pid) counts[pid] = (counts[pid] || 0) + 1;
+        });
+        return new Set(Object.entries(counts).filter(([, c]) => c > 1).map(([id]) => id));
+    }, [allVisits]);
 
     // Filtered queue
     const getFilteredVisits = (visits) => {
@@ -268,6 +288,26 @@ export default function PHCDashboard() {
                     <div>
                         <div className="stat-card-value">{reviewedVisits.length}</div>
                         <div className="stat-card-label">Reviewed</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Response Time & Repeat Indicator Row */}
+            <div className="stats-grid stagger-children" style={{ marginBottom: '1.25rem', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                <div className="stat-card">
+                    <div className="stat-card-icon saffron"><Timer size={24} /></div>
+                    <div>
+                        <div className="stat-card-value">{avgResponseTime ? formatDuration(avgResponseTime) : '—'}</div>
+                        <div className="stat-card-label">Avg Response Time</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-card-icon" style={{ background: repeatPatients.size > 0 ? 'var(--alert-red-light)' : 'var(--green-light)' }}>
+                        <RefreshCw size={24} color={repeatPatients.size > 0 ? 'var(--alert-red)' : 'var(--green)'} />
+                    </div>
+                    <div>
+                        <div className="stat-card-value">{repeatPatients.size}</div>
+                        <div className="stat-card-label">Repeat Escalation Patients</div>
                     </div>
                 </div>
             </div>
@@ -444,9 +484,19 @@ export default function PHCDashboard() {
                                                                 <span className="expired-tag"><AlertCircle size={11} /> Expired</span>
                                                             )}
                                                         </span>
-                                                    ) : (
-                                                        timeSince(visit.reviewRequestedAt || visit.createdAt)
-                                                    )}
+                                                    ) : (() => {
+                                                        const reqAt = visit.reviewRequestedAt || visit.createdAt;
+                                                        if (!reqAt) return '—';
+                                                        const ts = reqAt?.toDate?.() || new Date(reqAt);
+                                                        const diffMs = Date.now() - ts.getTime();
+                                                        const diffMin = Math.round(diffMs / 60000);
+                                                        const color = diffMin < 15 ? 'var(--green)' : diffMin < 60 ? '#F59E0B' : 'var(--alert-red)';
+                                                        return (
+                                                            <span style={{ color, fontWeight: 600 }}>
+                                                                {diffMin < 60 ? `${diffMin}m` : `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="text-muted" style={{ fontSize: '0.8rem' }}>
                                                     {visit.createdByName || '—'}

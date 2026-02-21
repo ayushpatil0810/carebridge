@@ -14,6 +14,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -87,6 +88,21 @@ export async function getVisitsByPatient(patientDocId) {
 }
 
 /**
+ * Get recent visits for a patient within the last N hours (default 48)
+ */
+export async function getRecentVisitsByPatient(patientDocId, hoursAgo = 48) {
+  const cutoff = Timestamp.fromDate(new Date(Date.now() - hoursAgo * 60 * 60 * 1000));
+  const q = query(
+    collection(db, COLLECTION),
+    where('patientDocId', '==', patientDocId),
+    where('createdAt', '>=', cutoff),
+    orderBy('createdAt', 'desc')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/**
  * Get a visit by document ID
  */
 export async function getVisitById(docId) {
@@ -99,11 +115,12 @@ export async function getVisitById(docId) {
 /**
  * Request PHC review for a visit
  */
-export async function requestPHCReview(visitId, isEmergency = false) {
+export async function requestPHCReview(visitId, isEmergency = false, escalationContext = []) {
   const docRef = doc(db, COLLECTION, visitId);
   await updateDoc(docRef, {
     status: 'Pending PHC Review',
     emergencyFlag: isEmergency,
+    escalationContext: escalationContext.length > 0 ? escalationContext : ['Clinical assessment'],
     reviewRequestedAt: serverTimestamp(),
   });
 }
@@ -127,14 +144,22 @@ export async function submitDoctorReview(visitId, reviewData) {
     responseTimeMs = now.getTime() - requestTime.getTime();
   }
 
-  // Build audit entry
+  // Build audit entry with full justification logging
   const auditEntry = {
     action: reviewData.action || 'Reviewed',
     by: reviewData.reviewedBy || '',
     note: reviewData.doctorNote || '',
     timestamp: now.toISOString(),
     responseTimeMs,
+    news2Score: visitData?.news2Score ?? null,
+    riskLevel: visitData?.riskLevel || '',
+    redFlags: visitData?.redFlags || [],
+    escalationContext: visitData?.escalationContext || [],
   };
+
+  // Add decision-specific fields to audit
+  if (reviewData.referralReason) auditEntry.referralReason = reviewData.referralReason;
+  if (reviewData.clarificationType) auditEntry.clarificationType = reviewData.clarificationType;
 
   const existingTrail = visitData?.auditTrail || [];
 
@@ -147,6 +172,11 @@ export async function submitDoctorReview(visitId, reviewData) {
     auditTrail: [...existingTrail, auditEntry],
   };
 
+  // Referral-specific fields
+  if (reviewData.action === 'Referral Approved') {
+    updateData.referralReason = reviewData.referralReason || '';
+  }
+
   // Monitoring-specific fields
   if (reviewData.action === 'Under Monitoring') {
     updateData.monitoringPeriod = reviewData.monitoringPeriod || '24h';
@@ -157,6 +187,7 @@ export async function submitDoctorReview(visitId, reviewData) {
   // Clarification-specific fields
   if (reviewData.action === 'Awaiting ASHA Response') {
     updateData.clarificationMessage = reviewData.clarificationMessage || '';
+    updateData.clarificationType = reviewData.clarificationType || '';
     updateData.clarificationRequestedAt = serverTimestamp();
   }
 
@@ -254,19 +285,40 @@ export async function getTodayVisits() {
 // ---- Utility Functions ----
 
 /**
- * Sort visits by clinical priority:
- * Emergency → Red → Yellow → Green, then oldest first within each group
+ * Sort visits by clinical priority (intelligent queue):
+ * 1. Emergency flagged
+ * 2. High NEWS2 score (≥7)
+ * 3. Repeat escalation (patient escalated multiple times)
+ * 4. Risk level (Red → Yellow → Green)
+ * 5. Oldest pending first
  */
 export function sortByPriority(visits) {
+  // Pre-compute repeat escalation counts
+  const patientEscalationCount = {};
+  visits.forEach(v => {
+    const pid = v.patientId || v.patientDocId;
+    if (pid) patientEscalationCount[pid] = (patientEscalationCount[pid] || 0) + 1;
+  });
+
   const riskOrder = { Red: 0, Yellow: 1, Green: 2, '': 3 };
   return [...visits].sort((a, b) => {
-    // Emergency first
+    // 1. Emergency first
     if (a.emergencyFlag && !b.emergencyFlag) return -1;
     if (!a.emergencyFlag && b.emergencyFlag) return 1;
-    // Then by risk level
+    // 2. High NEWS2 (≥7) gets priority
+    const aHighNEWS2 = (a.news2Score || 0) >= 7 ? 1 : 0;
+    const bHighNEWS2 = (b.news2Score || 0) >= 7 ? 1 : 0;
+    if (aHighNEWS2 !== bHighNEWS2) return bHighNEWS2 - aHighNEWS2;
+    // 3. Repeat escalation cases
+    const aPid = a.patientId || a.patientDocId;
+    const bPid = b.patientId || b.patientDocId;
+    const aRepeat = (patientEscalationCount[aPid] || 0) > 1 ? 1 : 0;
+    const bRepeat = (patientEscalationCount[bPid] || 0) > 1 ? 1 : 0;
+    if (aRepeat !== bRepeat) return bRepeat - aRepeat;
+    // 4. Risk level
     const riskDiff = (riskOrder[a.riskLevel] ?? 3) - (riskOrder[b.riskLevel] ?? 3);
     if (riskDiff !== 0) return riskDiff;
-    // Then oldest first (longest waiting)
+    // 5. Oldest first (longest waiting)
     const aTime = a.reviewRequestedAt?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
     const bTime = b.reviewRequestedAt?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
     return aTime - bTime;

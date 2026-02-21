@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPatientById } from '../../services/patientService';
-import { createVisit, requestPHCReview } from '../../services/visitService';
+import { createVisit, requestPHCReview, getRecentVisitsByPatient } from '../../services/visitService';
 import { calculateNEWS2, getRiskAdvisory, RED_FLAGS } from '../../utils/news2';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import { scheduleFollowUp } from '../../services/followUpService';
@@ -30,6 +30,12 @@ import {
     Siren,
     MessageSquare,
     CalendarPlus,
+    Info,
+    TriangleAlert,
+    ClipboardList,
+    RotateCcw,
+    HelpCircle,
+    Zap,
 } from 'lucide-react';
 
 const ADVISORY_ICONS = {
@@ -82,8 +88,22 @@ export default function VisitEntry() {
     const [followUpScheduled, setFollowUpScheduled] = useState(false);
     const [schedulingFollowUp, setSchedulingFollowUp] = useState(false);
 
+    // Repeat visit alert
+    const [recentVisits, setRecentVisits] = useState([]);
+
+    // Escalation context
+    const ESCALATION_REASONS = [
+        { key: 'high_news2', label: 'High NEWS2 Score', icon: Zap },
+        { key: 'red_flag', label: 'Red Flag Concern', icon: Flag },
+        { key: 'clinical_doubt', label: 'Clinical Doubt', icon: HelpCircle },
+        { key: 'repeat_visit', label: 'Repeat Visit', icon: RotateCcw },
+    ];
+    const [escalationReasons, setEscalationReasons] = useState([]);
+    const [showEscalation, setShowEscalation] = useState(false);
+
     useEffect(() => {
         loadPatient();
+        loadRecentVisits();
     }, [id]);
 
     const loadPatient = async () => {
@@ -94,6 +114,15 @@ export default function VisitEntry() {
             console.error('Error loading patient:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadRecentVisits = async () => {
+        try {
+            const visits = await getRecentVisitsByPatient(id, 48);
+            setRecentVisits(visits);
+        } catch (err) {
+            console.error('Error loading recent visits:', err);
         }
     };
 
@@ -148,11 +177,18 @@ export default function VisitEntry() {
     const handleRequestReview = async (isEmergency = false) => {
         if (!savedVisitId) return;
         try {
-            await requestPHCReview(savedVisitId, isEmergency);
+            await requestPHCReview(savedVisitId, isEmergency, escalationReasons);
             setReviewRequested(true);
+            setShowEscalation(false);
         } catch (err) {
             console.error('Error requesting review:', err);
         }
+    };
+
+    const toggleEscalationReason = (key) => {
+        setEscalationReasons(prev =>
+            prev.includes(key) ? prev.filter(r => r !== key) : [...prev, key]
+        );
     };
 
     const handleScheduleFollowUp = async () => {
@@ -388,6 +424,35 @@ export default function VisitEntry() {
                 </button>
             )}
 
+            {/* Repeat Visit Alert */}
+            {recentVisits.length > 0 && (
+                <div className="repeat-visit-alert" style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                        <TriangleAlert size={20} />
+                        <strong>Recent Visit Detected</strong>
+                    </div>
+                    <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
+                        This patient had <strong>{recentVisits.length} visit{recentVisits.length > 1 ? 's' : ''}</strong> in the last 48 hours.
+                        Consider repeat visit patterns before escalation.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {recentVisits.slice(0, 3).map((v, i) => (
+                            <div key={i} className="repeat-visit-item">
+                                <span className={`badge badge-${(v.riskLevel || 'green').toLowerCase()}`} style={{ fontSize: '0.65rem' }}>
+                                    {v.riskLevel || 'Green'}
+                                </span>
+                                <span style={{ fontSize: '0.78rem' }}>
+                                    Score {v.news2Score ?? '—'} • {v.chiefComplaint ? v.chiefComplaint.substring(0, 40) : 'No complaint'}
+                                </span>
+                                <span className="text-muted" style={{ fontSize: '0.7rem', marginLeft: 'auto' }}>
+                                    {v.createdAt?.toDate ? v.createdAt.toDate().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* NEWS2 Results */}
             {news2Result && (
                 <>
@@ -444,6 +509,54 @@ export default function VisitEntry() {
                         </div>
                     </div>
 
+                    {/* ✅ Risk Explanation Panel — "Why This Risk?" */}
+                    {(news2Result.riskLevel === 'Yellow' || news2Result.riskLevel === 'Red') && (
+                        <div className="risk-explanation-panel" style={{ marginBottom: '1.5rem' }}>
+                            <div className="risk-explanation-header">
+                                <Info size={18} />
+                                <span>Why {news2Result.riskLevel === 'Red' ? 'High' : 'Medium'} Risk?</span>
+                                <span className="text-marathi" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                                    ({news2Result.riskLevel === 'Red' ? 'उच्च धोका का?' : 'मध्यम धोका का?'})
+                                </span>
+                            </div>
+
+                            <div className="risk-contributors">
+                                {news2Result.breakdown.filter(p => p.score > 0).map((param, idx) => (
+                                    <div key={idx} className="risk-contributor-row">
+                                        <div className="contributor-param">
+                                            <span className="contributor-dot" style={{ background: param.score >= 3 ? 'var(--alert-red)' : param.score >= 2 ? 'var(--yellow)' : 'var(--accent-saffron)' }}></span>
+                                            {param.name}
+                                        </div>
+                                        <div className="contributor-detail">
+                                            <span className="contributor-value">{param.value}</span>
+                                            <span className="contributor-arrow">→</span>
+                                            <span className={`contributor-score score-${param.score >= 3 ? 'high' : param.score >= 2 ? 'med' : 'low'}`}>+{param.score}</span>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Red flags as contributors */}
+                                {news2Result.hasRedFlags && redFlags.map((flag, idx) => (
+                                    <div key={`rf-${idx}`} className="risk-contributor-row red-flag-row">
+                                        <div className="contributor-param">
+                                            <Flag size={12} color="var(--alert-red)" />
+                                            Red Flag: {flag}
+                                        </div>
+                                        <div className="contributor-detail">
+                                            <span className="contributor-score score-high">Auto-elevate</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="risk-explanation-summary">
+                                Total: <strong>{news2Result.totalScore} points</strong>
+                                {news2Result.hasRedFlags && ' + Red Flag auto-elevation'}
+                                &nbsp;→ <span className={`badge badge-${news2Result.riskLevel.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>{news2Result.riskLevel} Risk</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Risk Advisory */}
                     {advisory && (
                         <div className="advisory-box" style={{ marginBottom: '1.5rem' }}>
@@ -484,29 +597,83 @@ export default function VisitEntry() {
 
                                     {!reviewRequested ? (
                                         <div>
-                                            <p className="text-muted" style={{ marginBottom: '1rem' }}>
-                                                Would you like to request a PHC doctor review?
-                                            </p>
-                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => handleRequestReview(false)}
-                                                >
-                                                    <Send size={16} /> Request PHC Review
-                                                </button>
-                                                <button
-                                                    className="btn btn-danger"
-                                                    onClick={() => handleRequestReview(true)}
-                                                >
-                                                    <ShieldAlert size={16} /> Mark as Emergency
-                                                </button>
-                                            </div>
+                                            {!showEscalation ? (
+                                                <>
+                                                    <p className="text-muted" style={{ marginBottom: '1rem' }}>
+                                                        Would you like to request a PHC doctor review?
+                                                    </p>
+                                                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => setShowEscalation(true)}
+                                                        >
+                                                            <Send size={16} /> Request PHC Review
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-danger"
+                                                            onClick={() => { setEscalationReasons(['emergency']); handleRequestReview(true); }}
+                                                        >
+                                                            <ShieldAlert size={16} /> Mark as Emergency
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                /* ✅ Escalation Context Selection */
+                                                <div className="escalation-context">
+                                                    <div className="escalation-title">
+                                                        <ClipboardList size={16} />
+                                                        <span>Reason for Escalation</span>
+                                                        <span className="text-marathi" style={{ fontSize: '0.7rem', opacity: 0.7 }}>(संदर्भ कारण निवडा)</span>
+                                                    </div>
+                                                    <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.75rem' }}>
+                                                        Select one or more reasons to provide context to the PHC doctor:
+                                                    </p>
+                                                    <div className="escalation-reasons-grid">
+                                                        {ESCALATION_REASONS.map(r => {
+                                                            const Icon = r.icon;
+                                                            const selected = escalationReasons.includes(r.key);
+                                                            return (
+                                                                <button
+                                                                    key={r.key}
+                                                                    className={`escalation-reason-btn ${selected ? 'selected' : ''}`}
+                                                                    onClick={() => toggleEscalationReason(r.key)}
+                                                                >
+                                                                    <Icon size={16} />
+                                                                    <span>{r.label}</span>
+                                                                    {selected && <CheckCircle2 size={14} className="check-icon" />}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => handleRequestReview(false)}
+                                                            disabled={escalationReasons.length === 0}
+                                                        >
+                                                            <Send size={14} /> Submit to PHC
+                                                        </button>
+                                                        <button className="btn btn-ghost" onClick={() => setShowEscalation(false)}>
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div>
                                             <span className="status-badge pending" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
                                                 PHC Review Requested
                                             </span>
+                                            {escalationReasons.length > 0 && (
+                                                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                    {escalationReasons.map(r => (
+                                                        <span key={r} className="badge badge-indigo" style={{ fontSize: '0.65rem' }}>
+                                                            {ESCALATION_REASONS.find(er => er.key === r)?.label || r}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <p className="text-muted" style={{ marginTop: '0.75rem' }}>
                                                 The PHC doctor will review this case shortly.
                                             </p>

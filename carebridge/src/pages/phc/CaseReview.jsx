@@ -83,6 +83,25 @@ export default function CaseReview() {
     const [monitoringPeriod, setMonitoringPeriod] = useState('24h');
     const [recheckInstruction, setRecheckInstruction] = useState('');
     const [clarificationMessage, setClarificationMessage] = useState('');
+    const [referralReason, setReferralReason] = useState('');
+    const [clarificationType, setClarificationType] = useState('');
+
+    const REFERRAL_REASONS = [
+        'High NEWS2 — needs specialist evaluation',
+        'Red flag symptoms — urgent referral',
+        'Deteriorating condition despite monitoring',
+        'Diagnostic tests required (not available at PHC)',
+        'Surgical intervention likely needed',
+        'Pregnancy / obstetric complication',
+        'Pediatric emergency',
+    ];
+
+    const CLARIFICATION_TYPES = [
+        { key: 'missing_vitals', label: 'Missing Vitals', desc: 'One or more vital signs not recorded' },
+        { key: 'incomplete_symptoms', label: 'Incomplete Symptom Description', desc: 'Need detailed symptom history' },
+        { key: 'incorrect_entry', label: 'Possible Incorrect Entry', desc: 'Values seem unusual, please verify' },
+        { key: 'need_observation', label: 'Need Observation Period', desc: 'Monitor and report back after specified time' },
+    ];
 
     useEffect(() => {
         loadVisit();
@@ -113,12 +132,16 @@ export default function CaseReview() {
                 doctorNote,
                 reviewedBy: userName,
             };
+            if (selectedAction === 'Referral Approved') {
+                reviewData.referralReason = referralReason;
+            }
             if (selectedAction === 'Under Monitoring') {
                 reviewData.monitoringPeriod = monitoringPeriod;
                 reviewData.recheckInstruction = recheckInstruction;
             }
             if (selectedAction === 'Awaiting ASHA Response') {
                 reviewData.clarificationMessage = clarificationMessage;
+                reviewData.clarificationType = clarificationType;
             }
             await submitDoctorReview(visitId, reviewData);
             setSuccess('Decision submitted successfully!');
@@ -183,6 +206,20 @@ export default function CaseReview() {
                         <ShieldAlert size={14} /> EMERGENCY
                     </span>
                 )}
+                {/* Response Time Indicator */}
+                {visit?.status === 'Pending PHC Review' && visit?.reviewRequestedAt && (() => {
+                    const now = new Date();
+                    const reqTime = visit.reviewRequestedAt.toDate ? visit.reviewRequestedAt.toDate() : new Date(visit.reviewRequestedAt);
+                    const diffMs = now.getTime() - reqTime.getTime();
+                    const diffMin = Math.round(diffMs / 60000);
+                    const color = diffMin < 15 ? 'var(--green)' : diffMin < 60 ? 'var(--yellow)' : 'var(--alert-red)';
+                    const bg = diffMin < 15 ? 'var(--green-light)' : diffMin < 60 ? 'rgba(245,158,11,0.1)' : 'var(--alert-red-light)';
+                    return (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', fontWeight: 600, color, background: bg, padding: '4px 10px', borderRadius: '20px' }}>
+                            <Timer size={13} /> Waiting: {diffMin < 60 ? `${diffMin}m` : `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`}
+                        </span>
+                    );
+                })()}
             </div>
 
             {/* Success/Error */}
@@ -469,6 +506,25 @@ export default function CaseReview() {
                                 </button>
                             </div>
 
+                            {/* Referral Reason (when Approve selected) */}
+                            {selectedAction === 'Referral Approved' && (
+                                <div className="decision-detail" style={{ marginTop: '1rem' }}>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label className="form-label"><FileText size={13} /> Referral Reason</label>
+                                        <select
+                                            className="form-input"
+                                            value={referralReason}
+                                            onChange={e => setReferralReason(e.target.value)}
+                                        >
+                                            <option value="">Select reason...</option>
+                                            {REFERRAL_REASONS.map((r, i) => (
+                                                <option key={i} value={r}>{r}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Monitoring Options */}
                             {selectedAction === 'Under Monitoring' && (
                                 <div className="decision-detail" style={{ marginTop: '1rem' }}>
@@ -498,9 +554,25 @@ export default function CaseReview() {
                                 </div>
                             )}
 
-                            {/* Clarification Options */}
+                            {/* Clarification Options — Structured */}
                             {selectedAction === 'Awaiting ASHA Response' && (
                                 <div className="decision-detail" style={{ marginTop: '1rem' }}>
+                                    <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                                        <label className="form-label"><AlertCircle size={13} /> Clarification Type</label>
+                                        <div className="clarification-type-grid">
+                                            {CLARIFICATION_TYPES.map(ct => (
+                                                <button
+                                                    key={ct.key}
+                                                    className={`clarification-type-btn ${clarificationType === ct.key ? 'selected' : ''}`}
+                                                    onClick={() => setClarificationType(ct.key)}
+                                                    type="button"
+                                                >
+                                                    <div style={{ fontWeight: 600, fontSize: '0.78rem' }}>{ct.label}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{ct.desc}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="form-group" style={{ marginBottom: 0 }}>
                                         <label className="form-label"><MessageCircleQuestion size={13} /> Your Question for ASHA</label>
                                         <textarea
@@ -532,7 +604,7 @@ export default function CaseReview() {
                                 <button
                                     className="btn btn-primary btn-block"
                                     onClick={handleSubmitDecision}
-                                    disabled={submitting || (selectedAction === 'Awaiting ASHA Response' && !clarificationMessage.trim())}
+                                    disabled={submitting || (selectedAction === 'Referral Approved' && !referralReason) || (selectedAction === 'Awaiting ASHA Response' && (!clarificationMessage.trim() || !clarificationType))}
                                 >
                                     {submitting ? (
                                         <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div> Submitting...</>
@@ -580,6 +652,22 @@ export default function CaseReview() {
                         </div>
                     )}
 
+                    {/* Escalation Context */}
+                    {visit?.escalationContext?.length > 0 && (
+                        <div className="card" style={{ marginTop: '1rem', borderLeft: '3px solid var(--accent-indigo)' }}>
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                <AlertCircle size={16} /> ASHA Escalation Reasons
+                            </h3>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {visit.escalationContext.map((ctx, i) => (
+                                    <span key={i} className="badge badge-indigo" style={{ fontSize: '0.72rem' }}>
+                                        {ctx === 'high_news2' ? 'High NEWS2' : ctx === 'red_flag' ? 'Red Flag Concern' : ctx === 'clinical_doubt' ? 'Clinical Doubt' : ctx === 'repeat_visit' ? 'Repeat Visit' : ctx}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Escalation Info */}
                     <div className="card" style={{ marginTop: '1rem' }}>
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
@@ -609,7 +697,7 @@ export default function CaseReview() {
                             {visit?.responseTimeMs && (
                                 <div className="detail-item">
                                     <span className="detail-label">Response Time</span>
-                                    <span className="detail-value" style={{ fontWeight: 600 }}>
+                                    <span className="detail-value" style={{ fontWeight: 600, color: visit.responseTimeMs < 900000 ? 'var(--green)' : visit.responseTimeMs < 3600000 ? 'var(--yellow)' : 'var(--alert-red)' }}>
                                         {formatDuration(visit.responseTimeMs)}
                                     </span>
                                 </div>
@@ -633,6 +721,22 @@ export default function CaseReview() {
                                                 {entry.by} • {new Date(entry.timestamp).toLocaleString('en-IN')}
                                                 {entry.responseTimeMs && ` • Response: ${formatDuration(entry.responseTimeMs)}`}
                                             </div>
+                                            {entry.news2Score != null && (
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                    NEWS2: {entry.news2Score} ({entry.riskLevel} Risk)
+                                                    {entry.redFlags?.length > 0 && ` • Red Flags: ${entry.redFlags.join(', ')}`}
+                                                </div>
+                                            )}
+                                            {entry.referralReason && (
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', marginTop: '2px' }}>
+                                                    Reason: {entry.referralReason}
+                                                </div>
+                                            )}
+                                            {entry.clarificationType && (
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--yellow)', marginTop: '2px' }}>
+                                                    Type: {entry.clarificationType}
+                                                </div>
+                                            )}
                                             {entry.note && <div className="audit-note">{entry.note}</div>}
                                         </div>
                                     </div>

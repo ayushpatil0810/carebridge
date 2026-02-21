@@ -13,6 +13,8 @@ import {
     getHighNEWS2ByVillage,
     getPHCResponseTimes,
     getVillageCaseLoad,
+    getEscalationVolumeStats,
+    getRepeatEscalations,
 } from '../../services/adminService';
 import { formatDuration } from '../../services/visitService';
 import {
@@ -41,6 +43,8 @@ import {
     Zap,
     AlertTriangle,
     Eye,
+    RefreshCw,
+    TrendingUp,
 } from 'lucide-react';
 
 // Register Chart.js modules
@@ -122,6 +126,8 @@ export default function AdminDashboard() {
     const highNEWS2Village = useMemo(() => getHighNEWS2ByVillage(visits), [visits]);
     const responseTimes = useMemo(() => getPHCResponseTimes(visits), [visits]);
     const villageCaseLoad = useMemo(() => getVillageCaseLoad(visits), [visits]);
+    const escalationStats = useMemo(() => getEscalationVolumeStats(visits), [visits]);
+    const repeatEscalations = useMemo(() => getRepeatEscalations(visits), [visits]);
 
     // ---- Chart Data Builders ----
 
@@ -235,6 +241,7 @@ export default function AdminDashboard() {
 
     const sections = [
         { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { key: 'escalation', label: 'Escalation Monitor', icon: TrendingUp },
         { key: 'riskmap', label: 'Clinical Load', icon: MapPin },
         { key: 'highnews2', label: 'High NEWS2', icon: AlertCircle },
         { key: 'response', label: 'Response Times', icon: Clock },
@@ -382,6 +389,120 @@ export default function AdminDashboard() {
                                                 <td>{p.approvedReferrals}</td>
                                                 <td>{p.underMonitoring}</td>
                                                 <td>{p.pending > 0 ? <span className="badge badge-yellow">{p.pending}</span> : <span className="badge badge-green">0</span>}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ───── ESCALATION MONITOR ───── */}
+            {activeSection === 'escalation' && (
+                <div className="stagger-children">
+                    {/* Escalation Volume Cards */}
+                    <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
+                        <div className="stat-card">
+                            <div className="stat-card-icon saffron"><TrendingUp size={24} /></div>
+                            <div>
+                                <div className="stat-card-value">{escalationStats.totalEscalations}</div>
+                                <div className="stat-card-label">Total Escalations</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-card-icon red"><ShieldAlert size={24} /></div>
+                            <div>
+                                <div className="stat-card-value">{escalationStats.highNEWS2Cases}</div>
+                                <div className="stat-card-label">High NEWS2 Cases</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-card-icon" style={{ background: escalationStats.slaBreaches > 0 ? 'var(--alert-red-light)' : 'var(--green-light)' }}>
+                                <AlertTriangle size={24} color={escalationStats.slaBreaches > 0 ? 'var(--alert-red)' : 'var(--green)'} />
+                            </div>
+                            <div>
+                                <div className="stat-card-value" style={{ color: escalationStats.slaBreaches > 0 ? 'var(--alert-red)' : 'inherit' }}>{escalationStats.slaBreaches}</div>
+                                <div className="stat-card-label">SLA Breaches ({'>'}1hr)</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-card-icon indigo"><Eye size={24} /></div>
+                            <div>
+                                <div className="stat-card-value">{escalationStats.monitorReferralRatio}</div>
+                                <div className="stat-card-label">Monitor : Referral Ratio</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Stats Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-saffron)' }}>{escalationStats.pendingCount}</div>
+                            <div className="text-muted" style={{ fontSize: '0.75rem' }}>Pending Now</div>
+                        </div>
+                        <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>{escalationStats.monitoringCount}</div>
+                            <div className="text-muted" style={{ fontSize: '0.75rem' }}>Under Monitoring</div>
+                        </div>
+                        <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--green)' }}>{escalationStats.referralCount}</div>
+                            <div className="text-muted" style={{ fontSize: '0.75rem' }}>Referrals Approved</div>
+                        </div>
+                    </div>
+
+                    {/* Repeat Escalation Table */}
+                    <div className="card">
+                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <RefreshCw size={18} /> Repeat Escalation Patients
+                            {repeatEscalations.length > 0 && (
+                                <span className="badge badge-red" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>
+                                    {repeatEscalations.length} flagged
+                                </span>
+                            )}
+                        </h3>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+                            Patients escalated multiple times — may indicate care loop or deteriorating conditions.
+                        </p>
+                        {repeatEscalations.length === 0 ? (
+                            <div className="empty-state"><p>No repeat escalations detected — good sign!</p></div>
+                        ) : (
+                            <div className="queue-table-wrapper">
+                                <table className="queue-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Village</th>
+                                            <th>Escalations</th>
+                                            <th>Latest Risk</th>
+                                            <th>Latest NEWS2</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {repeatEscalations.map((p, i) => (
+                                            <tr key={i}>
+                                                <td style={{ fontWeight: 600 }}>{p.patientName}</td>
+                                                <td>{p.village}</td>
+                                                <td>
+                                                    <span className={`badge ${p.count >= 3 ? 'badge-red' : 'badge-yellow'}`}>
+                                                        {p.count}x
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge badge-${p.latestRisk === 'Red' ? 'red' : p.latestRisk === 'Yellow' ? 'yellow' : 'green'}`}>
+                                                        {p.latestRisk || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td>{p.latestNews2 || '—'}</td>
+                                                <td className="text-muted" style={{ fontSize: '0.8rem' }}>
+                                                    {p.count >= 3 ? (
+                                                        <span style={{ color: 'var(--alert-red)', fontWeight: 600 }}>Care Loop Alert</span>
+                                                    ) : (
+                                                        'Flagged'
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

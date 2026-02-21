@@ -293,3 +293,80 @@ export function getPHCPerformanceMetrics(visits) {
                 : 0,
     }));
 }
+
+/**
+ * Escalation volume stats per PHC (Deep Clinical Support)
+ * Returns total escalations, high NEWS2 cases, monitor vs referral ratio
+ */
+export function getEscalationVolumeStats(visits) {
+    const escalated = visits.filter(v => v.reviewRequestedAt || v.status === 'Pending PHC Review');
+    const highNEWS2 = escalated.filter(v => v.news2Score && v.news2Score >= 7);
+    const monitoring = visits.filter(v => v.status === 'Under Monitoring');
+    const referrals = visits.filter(v => v.status === 'Referral Approved');
+    const pending = visits.filter(v => v.status === 'Pending PHC Review');
+
+    // SLA breaches: cases pending > 60 minutes
+    const now = Date.now();
+    const slaBreaches = pending.filter(v => {
+        if (!v.reviewRequestedAt) return false;
+        const reqTime = v.reviewRequestedAt.toDate
+            ? v.reviewRequestedAt.toDate()
+            : new Date(v.reviewRequestedAt);
+        return (now - reqTime.getTime()) > 3600000; // >1 hour
+    });
+
+    return {
+        totalEscalations: escalated.length,
+        highNEWS2Cases: highNEWS2.length,
+        monitoringCount: monitoring.length,
+        referralCount: referrals.length,
+        pendingCount: pending.length,
+        slaBreaches: slaBreaches.length,
+        monitorReferralRatio: referrals.length > 0
+            ? (monitoring.length / referrals.length).toFixed(1)
+            : monitoring.length > 0 ? '∞' : '0',
+    };
+}
+
+/**
+ * Repeat Escalation Indicator (Deep Clinical Support)
+ * Identifies patients who have been escalated multiple times
+ */
+export function getRepeatEscalations(visits) {
+    const patientMap = {};
+
+    visits.forEach(v => {
+        if (!v.reviewRequestedAt && v.status !== 'Pending PHC Review') return;
+        const pid = v.patientId || v.patientDocId || '';
+        if (!pid) return;
+        if (!patientMap[pid]) {
+            patientMap[pid] = {
+                patientId: pid,
+                patientName: v.patientName || 'Unknown',
+                village: v.patientVillage || 'Unknown',
+                count: 0,
+                latestRisk: v.riskLevel || '',
+                latestNews2: v.news2Score || 0,
+                visits: [],
+            };
+        }
+        patientMap[pid].count++;
+        patientMap[pid].visits.push({
+            visitId: v.id,
+            date: v.createdAt?.toDate?.() || null,
+            risk: v.riskLevel,
+            news2: v.news2Score,
+            status: v.status,
+        });
+        // Keep latest risk info
+        if (v.createdAt?.toDate?.() > (patientMap[pid].latestDate || new Date(0))) {
+            patientMap[pid].latestRisk = v.riskLevel || '';
+            patientMap[pid].latestNews2 = v.news2Score || 0;
+            patientMap[pid].latestDate = v.createdAt?.toDate?.();
+        }
+    });
+
+    return Object.values(patientMap)
+        .filter(p => p.count > 1)
+        .sort((a, b) => b.count - a.count);
+}
