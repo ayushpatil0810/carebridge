@@ -1,0 +1,128 @@
+// ============================================================
+// Layout Component — App Shell with Sidebar + Header
+// ============================================================
+
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import {
+    LayoutDashboard,
+    UserPlus,
+    Search,
+    ClipboardList,
+    LogOut,
+    Heart,
+    Menu,
+} from 'lucide-react';
+import { useState } from 'react';
+
+export default function Layout() {
+    const { userName, role, logout } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
+    // Determine page title based on route
+    const getPageTitle = () => {
+        const path = location.pathname;
+        if (path === '/dashboard') return { en: 'Dashboard', mr: 'डॅशबोर्ड' };
+        if (path === '/register') return { en: 'Patient Registration', mr: 'रुग्ण नोंदणी' };
+        if (path === '/search') return { en: 'Patient Search', mr: 'रुग्ण शोधा' };
+        if (path.startsWith('/patient/') && path.includes('/visit')) return { en: 'New Visit', mr: 'नवीन भेट' };
+        if (path.startsWith('/patient/')) return { en: 'Patient Profile', mr: 'रुग्ण माहिती' };
+        if (path === '/phc') return { en: 'PHC Reviews', mr: 'PHC पुनरावलोकन' };
+        if (path.startsWith('/phc/review/')) return { en: 'Case Review', mr: 'प्रकरण पुनरावलोकन' };
+        return { en: 'CareBridge', mr: 'केअरब्रिज' };
+    };
+
+    const pageTitle = getPageTitle();
+
+    return (
+        <div className="app-layout">
+            {/* Mobile overlay */}
+            {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
+
+            {/* Sidebar */}
+            <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+                <div className="sidebar-brand">
+                    <h1><Heart size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />CareBridge</h1>
+                    <div className="brand-subtitle">Clinical Support System</div>
+                </div>
+
+                <nav className="sidebar-nav">
+                    {role === 'phc' ? (
+                        <>
+                            <div className="sidebar-nav-section">PHC Doctor Panel</div>
+                            <NavLink to="/phc" end className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><ClipboardList size={18} /></span>
+                                Pending Reviews
+                            </NavLink>
+                            <NavLink to="/search" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Search size={18} /></span>
+                                Search Patients
+                            </NavLink>
+                        </>
+                    ) : (
+                        <>
+                            <div className="sidebar-nav-section">ASHA Worker</div>
+                            <NavLink to="/dashboard" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><LayoutDashboard size={18} /></span>
+                                Dashboard
+                            </NavLink>
+                            <NavLink to="/register" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><UserPlus size={18} /></span>
+                                Register Patient
+                            </NavLink>
+                            <NavLink to="/search" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Search size={18} /></span>
+                                Search Patients
+                            </NavLink>
+                        </>
+                    )}
+                </nav>
+
+                <div className="sidebar-footer">
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <strong>{userName}</strong>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.7, textTransform: 'uppercase' }}>
+                            {role === 'phc' ? 'PHC Doctor' : 'ASHA Worker'}
+                        </div>
+                    </div>
+                    <button className="btn btn-ghost" onClick={handleLogout} style={{ color: 'rgba(245,240,232,0.7)', padding: '4px 0', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <LogOut size={14} /> Sign Out
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="main-content">
+                <header className="top-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <button className="btn btn-ghost mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                            <Menu size={20} />
+                        </button>
+                        <div className="top-header-title">
+                            {pageTitle.en}
+                            <span className="title-marathi">{pageTitle.mr}</span>
+                        </div>
+                    </div>
+                    <div className="top-header-actions">
+                        <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
+                </header>
+
+                <div className="warli-divider"></div>
+
+                <div className="page-container">
+                    <Outlet />
+                </div>
+            </main>
+        </div>
+    );
+}
