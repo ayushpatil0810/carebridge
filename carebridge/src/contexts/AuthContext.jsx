@@ -88,6 +88,7 @@ export function AuthProvider({ children }) {
         logout,
         isAsha: role === 'asha',
         isPhc: role === 'phc',
+        isAdmin: role === 'admin',
     };
 
     return (

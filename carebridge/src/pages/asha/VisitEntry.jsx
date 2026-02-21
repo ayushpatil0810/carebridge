@@ -42,7 +42,7 @@ const ADVISORY_ICONS = {
 export default function VisitEntry() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, userName } = useAuth();
 
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -107,7 +107,9 @@ export default function VisitEntry() {
                 patientDocId: id,
                 patientName: patient.name,
                 patientAge: patient.age,
+                patientGender: patient.gender || '',
                 patientVillage: patient.village,
+                patientHouseNumber: patient.houseNumber || '',
                 chiefComplaint,
                 symptomDuration,
                 vitals,
@@ -118,6 +120,7 @@ export default function VisitEntry() {
                 riskLevel: news2Result.riskLevel,
                 advisory: advisory?.level || '',
                 createdBy: user?.uid || '',
+                createdByName: userName || '',
             });
             setSavedVisitId(visit.id);
         } catch (err) {

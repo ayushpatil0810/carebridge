@@ -12,6 +12,13 @@ import {
     LogOut,
     Heart,
     Menu,
+    MapPin,
+    BarChart3,
+    MessageCircleQuestion,
+    Bell,
+    Users,
+    Building2,
+    Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,10 +43,20 @@ export default function Layout() {
         if (path.startsWith('/patient/')) return { en: 'Patient Profile', mr: 'रुग्ण माहिती' };
         if (path === '/phc') return { en: 'PHC Reviews', mr: 'PHC पुनरावलोकन' };
         if (path.startsWith('/phc/review/')) return { en: 'Case Review', mr: 'प्रकरण पुनरावलोकन' };
+        if (path.startsWith('/clarification/')) return { en: 'Respond to Clarification', mr: 'स्पष्टीकरण प्रतिसाद' };
+        if (path === '/admin') return { en: 'Admin Dashboard', mr: 'प्रशासकीय डॅशबोर्ड' };
+        if (path === '/admin/notices') return { en: 'Notices & Alerts', mr: 'सूचना व इशारे' };
+        if (path === '/admin/performance') return { en: 'Performance Analytics', mr: 'कार्यप्रदर्शन विश्लेषण' };
         return { en: 'CareBridge', mr: 'केअरब्रिज' };
     };
 
     const pageTitle = getPageTitle();
+
+    const getRoleLabel = () => {
+        if (role === 'admin') return 'Administrator';
+        if (role === 'phc') return 'PHC Doctor';
+        return 'ASHA Worker';
+    };
 
     return (
         <div className="app-layout">
@@ -54,7 +71,23 @@ export default function Layout() {
                 </div>
 
                 <nav className="sidebar-nav">
-                    {role === 'phc' ? (
+                    {role === 'admin' ? (
+                        <>
+                            <div className="sidebar-nav-section">Administration</div>
+                            <NavLink to="/admin" end className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><LayoutDashboard size={18} /></span>
+                                Dashboard
+                            </NavLink>
+                            <NavLink to="/admin/notices" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Bell size={18} /></span>
+                                Notices & Alerts
+                            </NavLink>
+                            <NavLink to="/admin/performance" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><BarChart3 size={18} /></span>
+                                Performance
+                            </NavLink>
+                        </>
+                    ) : role === 'phc' ? (
                         <>
                             <div className="sidebar-nav-section">PHC Doctor Panel</div>
                             <NavLink to="/phc" end className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
@@ -89,7 +122,7 @@ export default function Layout() {
                     <div style={{ marginBottom: '0.5rem' }}>
                         <strong>{userName}</strong>
                         <div style={{ fontSize: '0.75rem', opacity: 0.7, textTransform: 'uppercase' }}>
-                            {role === 'phc' ? 'PHC Doctor' : 'ASHA Worker'}
+                            {getRoleLabel()}
                         </div>
                     </div>
                     <button className="btn btn-ghost" onClick={handleLogout} style={{ color: 'rgba(245,240,232,0.7)', padding: '4px 0', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>

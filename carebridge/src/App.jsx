@@ -13,6 +13,10 @@ import PatientProfile from './pages/asha/PatientProfile';
 import VisitEntry from './pages/asha/VisitEntry';
 import PHCDashboard from './pages/phc/PHCDashboard';
 import CaseReview from './pages/phc/CaseReview';
+import ClarificationResponse from './pages/asha/ClarificationResponse';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminNotices from './pages/admin/AdminNotices';
+import AdminPerformance from './pages/admin/AdminPerformance';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -40,6 +44,9 @@ function RoleRedirect() {
 
   if (loading) return null;
 
+  if (role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
   if (role === 'phc') {
     return <Navigate to="/phc" replace />;
   }
@@ -75,10 +82,16 @@ function AppRoutes() {
         <Route path="search" element={<PatientSearch />} />
         <Route path="patient/:id" element={<PatientProfile />} />
         <Route path="patient/:id/visit" element={<VisitEntry />} />
+        <Route path="clarification/:visitId" element={<ClarificationResponse />} />
 
         {/* PHC routes */}
         <Route path="phc" element={<PHCDashboard />} />
         <Route path="phc/review/:visitId" element={<CaseReview />} />
+
+        {/* Admin routes */}
+        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin/notices" element={<AdminNotices />} />
+        <Route path="admin/performance" element={<AdminPerformance />} />
       </Route>
 
       {/* Fallback */}

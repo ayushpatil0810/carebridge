@@ -1,10 +1,10 @@
 // ============================================================
-// ASHA Dashboard — Summary cards + case list
+// ASHA Dashboard — Summary cards + case list + clarification alerts
 // ============================================================
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllVisits } from '../../services/visitService';
+import { getAllVisits, getClarificationCases } from '../../services/visitService';
 import {
     ClipboardList,
     AlertCircle,
@@ -13,23 +13,30 @@ import {
     UserPlus,
     Search,
     MessageSquare,
+    MessageCircleQuestion,
+    ArrowRight,
 } from 'lucide-react';
 
 export default function Dashboard() {
     const [visits, setVisits] = useState([]);
+    const [clarifications, setClarifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        loadVisits();
+        loadData();
     }, []);
 
-    const loadVisits = async () => {
+    const loadData = async () => {
         try {
-            const data = await getAllVisits();
-            setVisits(data);
+            const [allVisits, clarCases] = await Promise.all([
+                getAllVisits(),
+                getClarificationCases(),
+            ]);
+            setVisits(allVisits);
+            setClarifications(clarCases);
         } catch (err) {
-            console.error('Error loading visits:', err);
+            console.error('Error loading dashboard:', err);
         } finally {
             setLoading(false);
         }
@@ -79,6 +86,45 @@ export default function Dashboard() {
 
     return (
         <div>
+            {/* Clarification Alert Banner */}
+            {clarifications.length > 0 && (
+                <div className="clarification-alert" style={{
+                    background: 'var(--yellow-bg)',
+                    border: '1px solid var(--yellow-light)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1rem 1.25rem',
+                    marginBottom: '1.25rem',
+                    animation: 'cardFadeIn var(--transition-slow) ease',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem', fontWeight: 600, color: '#9A7B12' }}>
+                        <MessageCircleQuestion size={18} />
+                        {clarifications.length} Doctor Clarification{clarifications.length > 1 ? 's' : ''} Required
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {clarifications.map(c => (
+                            <div
+                                key={c.id}
+                                className="card card-clickable"
+                                style={{ padding: '0.75rem 1rem', margin: 0, boxShadow: 'none', border: '1px solid var(--yellow-light)' }}
+                                onClick={() => navigate(`/clarification/${c.id}`)}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                            {c.patientName || 'Unknown Patient'}
+                                        </div>
+                                        <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '2px' }}>
+                                            Doctor asks: "{c.clarificationMessage?.substring(0, 80) || '...'}"
+                                        </div>
+                                    </div>
+                                    <ArrowRight size={16} color="#9A7B12" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Stat Cards */}
             <div className="stats-grid stagger-children">
                 <div className="stat-card">
@@ -165,8 +211,10 @@ export default function Dashboard() {
                                             </span>
                                         )}
                                         <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
-                                                visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
-                                                    visit.emergencyFlag ? 'emergency' : ''
+                                                visit.status === 'Awaiting ASHA Response' ? 'clarification' :
+                                                    visit.status === 'Under Monitoring' ? 'monitoring' :
+                                                        visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
+                                                            visit.emergencyFlag ? 'emergency' : ''
                                             }`}>
                                             {visit.status}
                                         </span>
