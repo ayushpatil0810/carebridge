@@ -19,6 +19,10 @@ import {
     Users,
     Building2,
     Shield,
+    MessageSquare,
+    FileText,
+    CalendarCheck,
+    BookOpen,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -47,6 +51,9 @@ export default function Layout() {
         if (path === '/admin') return { en: 'Admin Dashboard', mr: 'प्रशासकीय डॅशबोर्ड' };
         if (path === '/admin/notices') return { en: 'Notices & Alerts', mr: 'सूचना व इशारे' };
         if (path === '/admin/performance') return { en: 'Performance Analytics', mr: 'कार्यप्रदर्शन विश्लेषण' };
+        if (path === '/templates') return { en: 'Message Templates', mr: 'संदेश नमुने' };
+        if (path === '/message-log') return { en: 'Message Log', mr: 'संदेश नोंद' };
+        if (path === '/follow-ups') return { en: 'Follow-Ups', mr: 'पाठपुरावा' };
         return { en: 'CareBridge', mr: 'केअरब्रिज' };
     };
 
@@ -113,6 +120,20 @@ export default function Layout() {
                             <NavLink to="/search" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
                                 <span className="nav-icon"><Search size={18} /></span>
                                 Search Patients
+                            </NavLink>
+
+                            <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Messaging</div>
+                            <NavLink to="/follow-ups" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><CalendarCheck size={18} /></span>
+                                Follow-Ups
+                            </NavLink>
+                            <NavLink to="/templates" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><BookOpen size={18} /></span>
+                                Templates
+                            </NavLink>
+                            <NavLink to="/message-log" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><FileText size={18} /></span>
+                                Message Log
                             </NavLink>
                         </>
                     )}

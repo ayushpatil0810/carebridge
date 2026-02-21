@@ -5,6 +5,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { TRIGGER_TEMPLATES } from '../../services/messageService';
+import MessageSuggestModal from '../../components/MessageSuggestModal';
 import {
     getVisitById,
     submitDoctorReview,
@@ -43,6 +45,7 @@ import {
     Timer,
     FileText,
     AlertCircle,
+    MessageSquare,
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -72,6 +75,7 @@ export default function CaseReview() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [showMsgModal, setShowMsgModal] = useState(false);
 
     // Decision state
     const [selectedAction, setSelectedAction] = useState('');
@@ -118,7 +122,10 @@ export default function CaseReview() {
             }
             await submitDoctorReview(visitId, reviewData);
             setSuccess('Decision submitted successfully!');
-            setTimeout(() => navigate('/phc'), 1500);
+            // For referral approvals, don't auto-redirect — allow sending message first
+            if (selectedAction !== 'Referral Approved') {
+                setTimeout(() => navigate('/phc'), 1500);
+            }
         } catch (err) {
             setError('Failed to submit decision: ' + err.message);
         } finally {
@@ -633,8 +640,38 @@ export default function CaseReview() {
                             </div>
                         </div>
                     )}
+                    {/* Referral Message Trigger */}
+                    {success && selectedAction === 'Referral Approved' && (
+                        <div className="card" style={{ marginTop: '1rem', borderLeft: '4px solid var(--alert-red)', textAlign: 'center' }}>
+                            <CheckCircle2 size={32} color="var(--green)" />
+                            <p style={{ fontWeight: 600, margin: '0.5rem 0' }}>{success}</p>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.75rem' }}>
+                                <button className="btn btn-success btn-sm" onClick={() => setShowMsgModal(true)}>
+                                    <MessageSquare size={14} /> Send Referral Message to Patient
+                                </button>
+                                <button className="btn btn-secondary btn-sm" onClick={() => navigate('/phc')}>
+                                    Skip & Return
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Message Suggest Modal */}
+            <MessageSuggestModal
+                isOpen={showMsgModal}
+                onClose={() => { setShowMsgModal(false); navigate('/phc'); }}
+                template={TRIGGER_TEMPLATES.red}
+                patient={{
+                    patientId: visit?.patientId || '',
+                    name: visit?.patientName || '',
+                    phone: visit?.patientPhone || '',
+                    contactNumber: visit?.patientContactNumber || '',
+                    village: visit?.patientVillage || '',
+                }}
+                visitId={visitId}
+            />
         </div>
     );
 }

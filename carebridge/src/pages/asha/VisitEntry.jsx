@@ -8,6 +8,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPatientById } from '../../services/patientService';
 import { createVisit, requestPHCReview } from '../../services/visitService';
 import { calculateNEWS2, getRiskAdvisory, RED_FLAGS } from '../../utils/news2';
+import { TRIGGER_TEMPLATES } from '../../services/messageService';
+import { scheduleFollowUp } from '../../services/followUpService';
+import MessageSuggestModal from '../../components/MessageSuggestModal';
 import {
     Calculator,
     Save,
@@ -25,6 +28,8 @@ import {
     Phone,
     Stethoscope,
     Siren,
+    MessageSquare,
+    CalendarPlus,
 } from 'lucide-react';
 
 const ADVISORY_ICONS = {
@@ -66,6 +71,16 @@ export default function VisitEntry() {
     const [advisory, setAdvisory] = useState(null);
     const [savedVisitId, setSavedVisitId] = useState(null);
     const [reviewRequested, setReviewRequested] = useState(false);
+
+    // Messaging
+    const [showMsgModal, setShowMsgModal] = useState(false);
+
+    // Follow-up scheduling
+    const [followUpDate, setFollowUpDate] = useState('');
+    const [followUpTime, setFollowUpTime] = useState('09:00');
+    const [followUpReason, setFollowUpReason] = useState('');
+    const [followUpScheduled, setFollowUpScheduled] = useState(false);
+    const [schedulingFollowUp, setSchedulingFollowUp] = useState(false);
 
     useEffect(() => {
         loadPatient();
@@ -138,6 +153,37 @@ export default function VisitEntry() {
         } catch (err) {
             console.error('Error requesting review:', err);
         }
+    };
+
+    const handleScheduleFollowUp = async () => {
+        if (!followUpDate || !savedVisitId) return;
+        setSchedulingFollowUp(true);
+        try {
+            await scheduleFollowUp({
+                patientId: patient.patientId,
+                patientName: patient.name,
+                patientVillage: patient.village,
+                visitId: savedVisitId,
+                followUpDate,
+                followUpTime,
+                reason: followUpReason || 'Follow-up check',
+                scheduledBy: user?.uid || '',
+                scheduledByName: userName || '',
+            });
+            setFollowUpScheduled(true);
+        } catch (err) {
+            console.error('Error scheduling follow-up:', err);
+        } finally {
+            setSchedulingFollowUp(false);
+        }
+    };
+
+    // Determine trigger template based on risk level
+    const getTriggerTemplate = () => {
+        if (!news2Result) return null;
+        if (news2Result.riskLevel === 'Green') return TRIGGER_TEMPLATES.green;
+        if (news2Result.riskLevel === 'Yellow') return TRIGGER_TEMPLATES.yellow;
+        return null; // Red triggers from PHC side
     };
 
     if (loading) {
@@ -430,54 +476,126 @@ export default function VisitEntry() {
                             <Save size={18} /> {saving ? 'Saving Visit...' : 'Save Visit Record'}
                         </button>
                     ) : (
-                        <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <div style={{ textAlign: 'center', padding: '0.5rem' }}>
-                                <div style={{ marginBottom: '0.5rem' }}><CheckCircle2 size={36} color="var(--green)" /></div>
-                                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Visit Saved Successfully</div>
+                        <>
+                            <div className="card" style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                                    <div style={{ marginBottom: '0.5rem' }}><CheckCircle2 size={36} color="var(--green)" /></div>
+                                    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Visit Saved Successfully</div>
 
-                                {!reviewRequested ? (
-                                    <div>
-                                        <p className="text-muted" style={{ marginBottom: '1rem' }}>
-                                            Would you like to request a PHC doctor review?
-                                        </p>
-                                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                                    {!reviewRequested ? (
+                                        <div>
+                                            <p className="text-muted" style={{ marginBottom: '1rem' }}>
+                                                Would you like to request a PHC doctor review?
+                                            </p>
+                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={() => handleRequestReview(false)}
+                                                >
+                                                    <Send size={16} /> Request PHC Review
+                                                </button>
+                                                <button
+                                                    className="btn btn-danger"
+                                                    onClick={() => handleRequestReview(true)}
+                                                >
+                                                    <ShieldAlert size={16} /> Mark as Emergency
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <span className="status-badge pending" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
+                                                PHC Review Requested
+                                            </span>
+                                            <p className="text-muted" style={{ marginTop: '0.75rem' }}>
+                                                The PHC doctor will review this case shortly.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Trigger-Based Message Suggestion */}
+                                    {getTriggerTemplate() && (
+                                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                                             <button
-                                                className="btn btn-primary"
-                                                onClick={() => handleRequestReview(false)}
+                                                className="btn btn-success btn-sm"
+                                                onClick={() => setShowMsgModal(true)}
                                             >
-                                                <Send size={16} /> Request PHC Review
-                                            </button>
-                                            <button
-                                                className="btn btn-danger"
-                                                onClick={() => handleRequestReview(true)}
-                                            >
-                                                <ShieldAlert size={16} /> Mark as Emergency
+                                                <MessageSquare size={14} /> {getTriggerTemplate().label}
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <span className="status-badge pending" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
-                                            PHC Review Requested
-                                        </span>
-                                        <p className="text-muted" style={{ marginTop: '0.75rem' }}>
-                                            The PHC doctor will review this case shortly.
-                                        </p>
-                                    </div>
-                                )}
+                                    )}
 
-                                <button
-                                    className="btn btn-ghost"
-                                    onClick={() => navigate(`/patient/${id}`)}
-                                    style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                                >
-                                    <ArrowLeft size={14} /> Back to Patient Profile
-                                </button>
+                                    <button
+                                        className="btn btn-ghost"
+                                        onClick={() => navigate(`/patient/${id}`)}
+                                        style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                        <ArrowLeft size={14} /> Back to Patient Profile
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Follow-Up Scheduler */}
+                            {savedVisitId && (
+                                <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--accent-indigo)' }}>
+                                    <h4 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
+                                        <CalendarPlus size={16} /> Schedule Follow-Up
+                                    </h4>
+                                    {followUpScheduled ? (
+                                        <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                                            <CheckCircle2 size={28} color="var(--green)" />
+                                            <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>Follow-up scheduled for {followUpDate} at {followUpTime}</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                                <input
+                                                    type="date"
+                                                    className="form-input"
+                                                    value={followUpDate}
+                                                    onChange={e => setFollowUpDate(e.target.value)}
+                                                    style={{ flex: '1 1 140px' }}
+                                                />
+                                                <input
+                                                    type="time"
+                                                    className="form-input"
+                                                    value={followUpTime}
+                                                    onChange={e => setFollowUpTime(e.target.value)}
+                                                    style={{ flex: '0 0 110px' }}
+                                                />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="Reason (e.g., Recheck temperature)"
+                                                value={followUpReason}
+                                                onChange={e => setFollowUpReason(e.target.value)}
+                                                style={{ marginBottom: '0.5rem' }}
+                                            />
+                                            <button
+                                                className="btn btn-primary btn-sm"
+                                                onClick={handleScheduleFollowUp}
+                                                disabled={!followUpDate || schedulingFollowUp}
+                                            >
+                                                <CalendarPlus size={14} /> {schedulingFollowUp ? 'Scheduling…' : 'Schedule Follow-Up'}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                 </>
             )}
+
+            {/* Message Suggest Modal */}
+            <MessageSuggestModal
+                isOpen={showMsgModal}
+                onClose={() => setShowMsgModal(false)}
+                template={getTriggerTemplate()}
+                patient={patient}
+                visitId={savedVisitId}
+            />
         </div>
     );
 }

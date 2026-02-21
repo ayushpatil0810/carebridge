@@ -14,6 +14,9 @@ import VisitEntry from './pages/asha/VisitEntry';
 import PHCDashboard from './pages/phc/PHCDashboard';
 import CaseReview from './pages/phc/CaseReview';
 import ClarificationResponse from './pages/asha/ClarificationResponse';
+import MessageTemplates from './pages/asha/MessageTemplates';
+import MessageLog from './pages/asha/MessageLog';
+import FollowUps from './pages/asha/FollowUps';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminNotices from './pages/admin/AdminNotices';
 import AdminPerformance from './pages/admin/AdminPerformance';
@@ -83,6 +86,9 @@ function AppRoutes() {
         <Route path="patient/:id" element={<PatientProfile />} />
         <Route path="patient/:id/visit" element={<VisitEntry />} />
         <Route path="clarification/:visitId" element={<ClarificationResponse />} />
+        <Route path="templates" element={<MessageTemplates />} />
+        <Route path="message-log" element={<MessageLog />} />
+        <Route path="follow-ups" element={<FollowUps />} />
 
         {/* PHC routes */}
         <Route path="phc" element={<PHCDashboard />} />
