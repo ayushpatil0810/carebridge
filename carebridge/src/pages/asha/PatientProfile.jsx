@@ -2,13 +2,13 @@
 // Patient Profile — View patient details + visit history
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPatientById } from '../../services/patientService';
 import { getVisitsByPatient } from '../../services/visitService';
 import { getActiveMaternityRecord, getGestationalAge, daysUntilEDD } from '../../services/maternityService';
 import { getVaccinations, getVaccineStatus, getDaysOverdue } from '../../services/vaccinationService';
-import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight } from 'lucide-react';
+import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle } from 'lucide-react';
 
 export default function PatientProfile() {
     const { id } = useParams();
@@ -103,7 +103,19 @@ export default function PatientProfile() {
                             {patient.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '2px' }}>{patient.name}</h2>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '2px' }}>
+                                {patient.name}
+                                {/* ABHA Linked Badge */}
+                                {patient.abhaLinked || patient.abhaId ? (
+                                    <span className="badge badge-green" style={{ fontSize: '0.6rem', marginLeft: '8px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                        <ShieldCheck size={10} /> ABHA Linked
+                                    </span>
+                                ) : (
+                                    <span className="badge" style={{ fontSize: '0.6rem', marginLeft: '8px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(100,100,100,0.08)', color: 'var(--text-muted)' }}>
+                                        <ShieldOff size={10} /> ABHA Not Linked
+                                    </span>
+                                )}
+                            </h2>
                             <div className="text-muted">
                                 {patient.patientId} • Registered {formatTime(patient.createdAt)}
                             </div>
@@ -216,6 +228,86 @@ export default function PatientProfile() {
                         </div>
                     </div>
                 ) : null;
+            })()}
+
+            {/* Digital Health Record Summary — shown only when ABHA linked */}
+            {(patient.abhaLinked || patient.abhaId) && (() => {
+                const totalVisits = visits.length;
+                const escalations = visits.filter(v => v.status === 'Pending PHC Review' || v.status === 'Reviewed' || v.status === 'Referral Approved' || v.emergencyFlag);
+                const redEsc = visits.filter(v => v.riskLevel === 'Red').length;
+                const yellowEsc = visits.filter(v => v.riskLevel === 'Yellow').length;
+                const reviewed = visits.filter(v => v.status === 'Reviewed' || v.status === 'Referral Approved').length;
+                const pending = visits.filter(v => v.status === 'Pending PHC Review').length;
+                const latest = visits.length > 0 ? visits[0] : null;
+                const monitoringStatus = !latest ? 'No visits' :
+                    latest.riskLevel === 'Red' ? 'Active – High Risk' :
+                        latest.riskLevel === 'Yellow' ? 'Active – Moderate Risk' :
+                            latest.status === 'Reviewed' ? 'Resolved' : 'Routine Monitoring';
+                const monitorColor = !latest ? 'var(--text-muted)' :
+                    latest.riskLevel === 'Red' ? '#DC2626' :
+                        latest.riskLevel === 'Yellow' ? '#D97706' :
+                            latest.status === 'Reviewed' ? '#16A34A' : '#6366F1';
+
+                return (
+                    <div className="card" style={{ marginBottom: '1.5rem' }}>
+                        <div className="card-header">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FileText size={18} /> Digital Health Record
+                                <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(डिजिटल आरोग्य नोंद)</span>
+                            </h3>
+                            <span className="badge badge-green" style={{ fontSize: '0.6rem' }}>ABHA: {patient.abhaId}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                            {/* Past Visit Count */}
+                            <div className="dhr-stat">
+                                <div className="dhr-stat-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
+                                    <ClipboardList size={18} />
+                                </div>
+                                <div>
+                                    <div className="dhr-stat-value">{totalVisits}</div>
+                                    <div className="dhr-stat-label">Past Visits</div>
+                                </div>
+                            </div>
+                            {/* Escalation History */}
+                            <div className="dhr-stat">
+                                <div className="dhr-stat-icon" style={{ background: 'rgba(220,38,38,0.08)', color: '#DC2626' }}>
+                                    <AlertTriangle size={18} />
+                                </div>
+                                <div>
+                                    <div className="dhr-stat-value">{escalations.length}</div>
+                                    <div className="dhr-stat-label">Escalations</div>
+                                    {(redEsc > 0 || yellowEsc > 0) && (
+                                        <div style={{ display: 'flex', gap: '0.2rem', marginTop: '2px' }}>
+                                            {redEsc > 0 && <span className="badge badge-red" style={{ fontSize: '0.55rem' }}>{redEsc} Red</span>}
+                                            {yellowEsc > 0 && <span className="badge badge-yellow" style={{ fontSize: '0.55rem' }}>{yellowEsc} Yellow</span>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            {/* PHC Decision */}
+                            <div className="dhr-stat">
+                                <div className="dhr-stat-icon" style={{ background: 'rgba(34,197,94,0.1)', color: '#16A34A' }}>
+                                    <ShieldCheck size={18} />
+                                </div>
+                                <div>
+                                    <div className="dhr-stat-value">{reviewed}</div>
+                                    <div className="dhr-stat-label">PHC Reviewed</div>
+                                    {pending > 0 && <span className="badge badge-yellow" style={{ fontSize: '0.55rem', marginTop: '2px' }}>{pending} pending</span>}
+                                </div>
+                            </div>
+                            {/* Monitoring Status */}
+                            <div className="dhr-stat">
+                                <div className="dhr-stat-icon" style={{ background: 'rgba(255,136,0,0.1)', color: '#FF8800' }}>
+                                    <Activity size={18} />
+                                </div>
+                                <div>
+                                    <div className="dhr-stat-value" style={{ fontSize: '0.85rem', color: monitorColor }}>{monitoringStatus}</div>
+                                    <div className="dhr-stat-label">Current Status</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
             })()}
 
             {/* Visit History */}

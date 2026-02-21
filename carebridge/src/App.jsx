@@ -14,6 +14,7 @@ import VisitEntry from './pages/asha/VisitEntry';
 import PHCDashboard from './pages/phc/PHCDashboard';
 import CaseReview from './pages/phc/CaseReview';
 import PHCMaternityPanel from './pages/phc/PHCMaternityPanel';
+import PHCVaccinationPanel from './pages/phc/PHCVaccinationPanel';
 import ClarificationResponse from './pages/asha/ClarificationResponse';
 import MessageTemplates from './pages/asha/MessageTemplates';
 import MessageLog from './pages/asha/MessageLog';
@@ -23,6 +24,7 @@ import VaccinationTracker from './pages/asha/VaccinationTracker';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminNotices from './pages/admin/AdminNotices';
 import AdminPerformance from './pages/admin/AdminPerformance';
+import AdminVaccinationPanel from './pages/admin/AdminVaccinationPanel';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -99,11 +101,13 @@ function AppRoutes() {
         <Route path="phc" element={<PHCDashboard />} />
         <Route path="phc/review/:visitId" element={<CaseReview />} />
         <Route path="phc/maternity" element={<PHCMaternityPanel />} />
+        <Route path="phc/vaccinations" element={<PHCVaccinationPanel />} />
 
         {/* Admin routes */}
         <Route path="admin" element={<AdminDashboard />} />
         <Route path="admin/notices" element={<AdminNotices />} />
         <Route path="admin/performance" element={<AdminPerformance />} />
+        <Route path="admin/vaccinations" element={<AdminVaccinationPanel />} />
       </Route>
 
       {/* Fallback */}

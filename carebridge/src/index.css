@@ -3583,3 +3583,206 @@ select.form-input {
     gap: 0.4rem;
   }
 }
+
+/* ══════════════════════════════════════
+   PHC Vaccination Panel — Oversight View
+   ══════════════════════════════════════ */
+
+.phc-vax-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.phc-vax-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.phc-vax-row {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: background 0.12s;
+}
+
+.phc-vax-row:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.phc-vax-row.has-overdue {
+  border-left: 3px solid #DC2626;
+}
+
+.phc-vax-village-detail {
+  padding: 0.5rem 0.75rem 0.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.01);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.phc-vax-patient-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.phc-vax-patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.phc-vax-patient-header:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.phc-vax-timeline {
+  padding: 0.4rem 0.65rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-top: 1px dashed var(--border-light);
+}
+
+.phc-vax-timeline-item {
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid var(--text-muted);
+  border-radius: 0 4px 4px 0;
+  background: rgba(0, 0, 0, 0.01);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .phc-vax-header {
+    display: none;
+  }
+
+  .phc-vax-row {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .phc-vax-row>div {
+    flex: none !important;
+    text-align: left !important;
+  }
+
+  .phc-vax-village-detail {
+    padding-left: 0.75rem;
+  }
+}
+
+/* ══════════════════════════════════════
+   Admin Vaccination Governance Table
+   ══════════════════════════════════════ */
+
+.admin-vax-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-vax-table thead th {
+  padding: 0.55rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid var(--border-light);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.admin-vax-table thead th:hover {
+  color: var(--accent-saffron);
+}
+
+.admin-vax-table tbody tr {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: background 0.12s;
+}
+
+.admin-vax-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.admin-vax-table tbody tr.alert-row {
+  background: rgba(220, 38, 38, 0.03);
+  border-left: 3px solid #DC2626;
+}
+
+.admin-vax-table tbody td {
+  padding: 0.5rem 0.65rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .admin-vax-table {
+    font-size: 0.72rem;
+  }
+
+  .admin-vax-table thead th,
+  .admin-vax-table tbody td {
+    padding: 0.35rem 0.4rem;
+  }
+}
+
+/* ══════════════════════════════════════
+   Digital Health Record — ABHA Summary
+   ══════════════════════════════════════ */
+
+.dhr-stat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  transition: box-shadow 0.15s;
+}
+
+.dhr-stat:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dhr-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dhr-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.dhr-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}

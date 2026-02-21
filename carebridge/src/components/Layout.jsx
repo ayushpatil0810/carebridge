@@ -53,13 +53,15 @@ export default function Layout() {
         if (path.startsWith('/clarification/')) return { en: 'Respond to Clarification', mr: 'स्पष्टीकरण प्रतिसाद' };
         if (path === '/admin') return { en: 'Admin Dashboard', mr: 'प्रशासकीय डॅशबोर्ड' };
         if (path === '/admin/notices') return { en: 'Notices & Alerts', mr: 'सूचना व इशारे' };
-        if (path === '/admin/performance') return { en: 'Performance Analytics', mr: 'कार्यप्रदर्शन विश्लेषण' };
+        if (path === '/admin/performance') return { en: 'Performance', mr: 'कामगिरी' };
+        if (path === '/admin/vaccinations') return { en: 'Vaccination Governance', mr: 'लसीकरण शासन' };
         if (path === '/templates') return { en: 'Message Templates', mr: 'संदेश नमुने' };
         if (path === '/message-log') return { en: 'Message Log', mr: 'संदेश नोंद' };
         if (path === '/follow-ups') return { en: 'Follow-Ups', mr: 'पाठपुरावा' };
         if (path === '/maternity') return { en: 'Maternity Tracker', mr: 'माता सेवा' };
         if (path === '/vaccinations') return { en: 'Vaccination Tracker', mr: 'लसीकरण व्यवस्थापक' };
         if (path === '/phc/maternity') return { en: 'Maternal Overview', mr: 'माता आरोग्य विहंगावलोकन' };
+        if (path === '/phc/vaccinations') return { en: 'Vaccination Monitoring', mr: 'लसीकरण निरीक्षण' };
         return { en: 'CareBridge', mr: 'केअरब्रिज' };
     };
 
@@ -99,6 +101,10 @@ export default function Layout() {
                                 <span className="nav-icon"><BarChart3 size={18} /></span>
                                 Performance
                             </NavLink>
+                            <NavLink to="/admin/vaccinations" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Syringe size={18} /></span>
+                                Vaccination
+                            </NavLink>
                         </>
                     ) : role === 'phc' ? (
                         <>
@@ -112,10 +118,14 @@ export default function Layout() {
                                 Search Patients
                             </NavLink>
 
-                            <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Maternal Care</div>
+                            <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Health Programs</div>
                             <NavLink to="/phc/maternity" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
                                 <span className="nav-icon"><Baby size={18} /></span>
                                 Maternal Overview
+                            </NavLink>
+                            <NavLink to="/phc/vaccinations" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Syringe size={18} /></span>
+                                Vaccination Monitoring
                             </NavLink>
                         </>
                     ) : (

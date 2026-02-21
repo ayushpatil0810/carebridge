@@ -54,6 +54,7 @@ export async function registerPatient(data) {
         village: data.village,
         familyId,
         abhaId: data.abhaId || '',
+        abhaLinked: Boolean(data.abhaId && data.abhaId.trim()),
         contact: data.contact || '',
         createdAt: serverTimestamp(),
         createdBy: data.createdBy || '',
