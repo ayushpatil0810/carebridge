@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { registerPatient } from '../../services/patientService';
+import { useTranslation } from 'react-i18next';
 import { FilePlus, AlertTriangle } from 'lucide-react';
 
 export default function PatientRegister() {
@@ -22,6 +23,7 @@ export default function PatientRegister() {
     const [error, setError] = useState('');
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,7 +42,7 @@ export default function PatientRegister() {
             navigate(`/patient/${patient.id}`);
         } catch (err) {
             console.error('Error registering patient:', err);
-            setError('Failed to register patient. Please try again.');
+            setError(t('patientRegister.failedRegister'));
         } finally {
             setLoading(false);
         }
@@ -51,7 +53,7 @@ export default function PatientRegister() {
             <div className="card">
                 <div className="card-header">
                     <h2 className="card-title">
-                        New Patient <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(नवीन रुग्ण)</span>
+                        {t('patient.newPatient')}
                     </h2>
                 </div>
 
@@ -59,7 +61,7 @@ export default function PatientRegister() {
                     {/* Name */}
                     <div className="form-group">
                         <label className="form-label">
-                            Patient Name <span className="label-marathi">रुग्णाचे नाव</span>
+                            {t('patient.name')}
                         </label>
                         <input
                             type="text"
@@ -67,7 +69,7 @@ export default function PatientRegister() {
                             className="form-input"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Enter patient's full name"
+                            placeholder={t('patientRegister.enterFullName')}
                             required
                         />
                     </div>
@@ -76,7 +78,7 @@ export default function PatientRegister() {
                     <div className="form-row">
                         <div className="form-group">
                             <label className="form-label">
-                                Age <span className="label-marathi">वय</span>
+                                {t('patient.age')}
                             </label>
                             <input
                                 type="number"
@@ -84,7 +86,7 @@ export default function PatientRegister() {
                                 className="form-input"
                                 value={formData.age}
                                 onChange={handleChange}
-                                placeholder="Age in years"
+                                placeholder={t('patientRegister.ageInYears')}
                                 min="0"
                                 max="150"
                                 required
@@ -93,7 +95,7 @@ export default function PatientRegister() {
 
                         <div className="form-group">
                             <label className="form-label">
-                                Gender <span className="label-marathi">लिंग</span>
+                                {t('patient.gender')}
                             </label>
                             <div className="radio-group">
                                 {['Male', 'Female', 'Other'].map((g) => (
@@ -105,7 +107,7 @@ export default function PatientRegister() {
                                             checked={formData.gender === g}
                                             onChange={handleChange}
                                         />
-                                        {g}
+                                        {t(`patient.${g.toLowerCase()}`)}
                                     </label>
                                 ))}
                             </div>
@@ -116,7 +118,7 @@ export default function PatientRegister() {
                     <div className="form-row">
                         <div className="form-group">
                             <label className="form-label">
-                                House Number <span className="label-marathi">घर क्रमांक</span>
+                                {t('patient.houseNumber')}
                             </label>
                             <input
                                 type="text"
@@ -124,17 +126,17 @@ export default function PatientRegister() {
                                 className="form-input"
                                 value={formData.houseNumber}
                                 onChange={handleChange}
-                                placeholder="e.g. 42-A"
+                                placeholder={t('patientRegister.houseNumberExample')}
                                 required
                             />
                             <div className="form-hint">
-                                Same house number = same Family ID
+                                {t('patientRegister.sameHouseHint')}
                             </div>
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">
-                                Village <span className="label-marathi">गाव</span>
+                                {t('patient.village')}
                             </label>
                             <input
                                 type="text"
@@ -142,7 +144,7 @@ export default function PatientRegister() {
                                 className="form-input"
                                 value={formData.village}
                                 onChange={handleChange}
-                                placeholder="Enter village name"
+                                placeholder={t('patientRegister.enterVillage')}
                                 required
                             />
                         </div>
@@ -151,8 +153,8 @@ export default function PatientRegister() {
                     {/* ABHA ID */}
                     <div className="form-group">
                         <label className="form-label">
-                            ABHA ID <span className="label-marathi">ABHA आयडी</span>
-                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>(Optional)</span>
+                            {t('patient.abhaId')}
+                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>{t('patientRegister.optional')}</span>
                         </label>
                         <input
                             type="text"
@@ -160,14 +162,14 @@ export default function PatientRegister() {
                             className="form-input"
                             value={formData.abhaId}
                             onChange={handleChange}
-                            placeholder="14-digit ABHA number"
+                            placeholder={t('patientRegister.abhaDigits')}
                         />
                     </div>
 
                     {/* Contact Number */}
                     <div className="form-group">
                         <label className="form-label">
-                            Contact Number <span className="label-marathi">संपर्क क्रमांक</span>
+                            {t('patient.contactNumber')}
                         </label>
                         <input
                             type="tel"
@@ -175,7 +177,7 @@ export default function PatientRegister() {
                             className="form-input"
                             value={formData.contact}
                             onChange={handleChange}
-                            placeholder="10-digit mobile number"
+                            placeholder={t('patientRegister.mobileNumber')}
                         />
                     </div>
 
@@ -195,7 +197,7 @@ export default function PatientRegister() {
                             fontSize: '0.85rem',
                             marginBottom: '1.25rem',
                         }}>
-                            <strong>Family ID:</strong>{' '}
+                            <strong>{t('patientRegister.familyIdPreview')}</strong>{' '}
                             FAM-{formData.village.toLowerCase().replace(/\s+/g, '')}-{formData.houseNumber.toLowerCase().replace(/\s+/g, '')}
                         </div>
                     )}
@@ -206,7 +208,7 @@ export default function PatientRegister() {
                         disabled={loading}
                     >
                         <FilePlus size={18} />
-                        {loading ? 'Registering...' : 'Register Patient'}
+                        {loading ? t('patient.registering') : t('patient.register')}
                     </button>
                 </form>
             </div>

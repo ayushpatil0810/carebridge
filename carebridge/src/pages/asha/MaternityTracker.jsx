@@ -44,9 +44,11 @@ import {
     ChevronRight,
     FileText,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function MaternityTracker() {
     const { userName } = useAuth();
+    const { t } = useTranslation();
 
     // ── State ──
     const [patients, setPatients] = useState([]);
@@ -374,10 +376,7 @@ export default function MaternityTracker() {
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
                     <div className="card-header">
                         <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Baby size={22} /> Maternity Care
-                            <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>
-                                (माता सेवा)
-                            </span>
+                            <Baby size={22} /> {t('maternity.maternityCare')}
                         </h2>
                     </div>
                     <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
@@ -473,7 +472,7 @@ export default function MaternityTracker() {
                         <div className="empty-icon"><Heart size={48} strokeWidth={1} /></div>
                         <p>No active maternity record</p>
                         <button className="btn btn-primary" onClick={() => setShowRegisterForm(true)} style={{ marginTop: '1rem' }}>
-                            <Plus size={16} /> Register Pregnancy <span className="text-marathi" style={{ fontSize: '0.75rem', marginLeft: '4px' }}>(गर्भधारणा नोंदणी)</span>
+                            <Plus size={16} /> {t('maternity.registerPregnancy')}
                         </button>
                     </div>
                 </div>
@@ -483,14 +482,13 @@ export default function MaternityTracker() {
             {showRegisterForm && (
                 <div className="card">
                     <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                        <Heart size={18} /> Register Pregnancy
-                        <span className="text-marathi text-muted" style={{ fontSize: '0.75rem' }}>(गर्भधारणा नोंदणी)</span>
+                        <Heart size={18} /> {t('maternity.registerPregnancy')}
                     </h3>
                     <form onSubmit={handleRegisterPregnancy}>
                         <div className="form-row">
                             <div className="form-group">
                                 <label className="form-label">
-                                    LMP Date <span className="label-marathi">शेवटची पाळी</span>
+                                    {t('maternity.lmpDate')}
                                 </label>
                                 <input type="date" className="form-input" required value={regForm.lmpDate}
                                     onChange={e => setRegForm({ ...regForm, lmpDate: e.target.value })} />
@@ -501,7 +499,7 @@ export default function MaternityTracker() {
                                 )}
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Blood Group <span className="label-marathi">रक्तगट</span></label>
+                                <label className="form-label">{t('maternity.bloodGroup')}</label>
                                 <select className="form-input" value={regForm.bloodGroup}
                                     onChange={e => setRegForm({ ...regForm, bloodGroup: e.target.value })}>
                                     <option value="">Select...</option>
@@ -514,13 +512,13 @@ export default function MaternityTracker() {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label className="form-label">Gravida <span className="label-marathi">गर्भधारणा क्र.</span></label>
+                                <label className="form-label">{t('maternity.gravida')}</label>
                                 <input type="number" className="form-input" min="1" max="15" value={regForm.gravida}
                                     onChange={e => setRegForm({ ...regForm, gravida: e.target.value })} />
                                 <div className="form-hint">Total pregnancies including current</div>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Para <span className="label-marathi">प्रसूती क्र.</span></label>
+                                <label className="form-label">{t('maternity.para')}</label>
                                 <input type="number" className="form-input" min="0" max="15" value={regForm.para}
                                     onChange={e => setRegForm({ ...regForm, para: e.target.value })} />
                                 <div className="form-hint">Previous deliveries</div>
@@ -531,7 +529,7 @@ export default function MaternityTracker() {
                         <div className="form-group">
                             <label className="form-label">
                                 <Shield size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                                High-Risk Factors <span className="label-marathi">उच्च-जोखीम</span>
+                                {t('maternity.highRiskFactors')}
                             </label>
                             <div className="maternity-risk-grid">
                                 {HIGH_RISK_FACTORS.map(f => (
@@ -539,7 +537,7 @@ export default function MaternityTracker() {
                                         className={`maternity-risk-btn ${regForm.highRiskFactors.includes(f.key) ? 'selected' : ''}`}
                                         onClick={() => toggleRiskFactor(f.key)}>
                                         <div style={{ fontWeight: 600, fontSize: '0.78rem' }}>{f.label}</div>
-                                        <div className="text-marathi" style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{f.labelMr}</div>
+
                                     </button>
                                 ))}
                             </div>
@@ -567,9 +565,7 @@ export default function MaternityTracker() {
                             <div>
                                 <div className="maternity-status-label">
                                     {maternityRecord.status === 'antenatal' ? 'Pre-Natal (ANC)' : 'Post-Natal (PNC)'}
-                                    <span className="text-marathi" style={{ fontSize: '0.7rem', marginLeft: '6px' }}>
-                                        {maternityRecord.status === 'antenatal' ? '(प्रसवपूर्व)' : '(प्रसवोत्तर)'}
-                                    </span>
+
                                 </div>
                                 {maternityRecord.status === 'antenatal' && helpers.ga && (
                                     <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
@@ -795,7 +791,7 @@ export default function MaternityTracker() {
                                                 </div>
                                                 <div className="anc-timeline-content">
                                                     <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{s.label}</div>
-                                                    <div className="text-marathi text-muted" style={{ fontSize: '0.68rem' }}>{s.labelMr}</div>
+
                                                     {done && (
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--green)', marginTop: '2px' }}>
                                                             ✓ {new Date(done.date).toLocaleDateString('en-IN')}
@@ -867,12 +863,12 @@ export default function MaternityTracker() {
 
                             {/* ──── SECTION A: Core Measurable Vitals ──── */}
                             <div className="ds-section-header">
-                                <Stethoscope size={15} /> A. Maternal Vitals <span className="text-marathi text-muted" style={{ fontSize: '0.72rem' }}>(महत्त्वपूर्ण चिन्हे)</span>
+                                <Stethoscope size={15} /> {t('maternity.maternalVitals')}
                             </div>
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">BP Systolic (mmHg) <span className="label-marathi">रक्तदाब</span></label>
+                                    <label className="form-label">{t('maternity.bpSystolic')}</label>
                                     <input type="number" className="form-input" value={ancForm.bpSystolic}
                                         onChange={e => setANCForm({ ...ancForm, bpSystolic: e.target.value })} placeholder="e.g. 120"
                                         style={Number(ancForm.bpSystolic) >= 140 ? { borderColor: 'var(--alert-red)', background: 'rgba(220,38,38,0.04)' } : {}} />
@@ -888,14 +884,14 @@ export default function MaternityTracker() {
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Pulse Rate (bpm) <span className="label-marathi">नाडी</span></label>
+                                    <label className="form-label">{t('maternity.pulseRate')}</label>
                                     <input type="number" className="form-input" value={ancForm.pulse}
                                         onChange={e => setANCForm({ ...ancForm, pulse: e.target.value })} placeholder="e.g. 80"
                                         style={Number(ancForm.pulse) > 120 ? { borderColor: 'var(--alert-red)', background: 'rgba(220,38,38,0.04)' } : {}} />
                                     {Number(ancForm.pulse) > 120 && <div className="form-hint" style={{ color: 'var(--alert-red)' }}>⚠ High (&gt;120)</div>}
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Respiratory Rate (/min) <span className="label-marathi">श्वसन दर</span></label>
+                                    <label className="form-label">{t('maternity.respiratoryRate')}</label>
                                     <input type="number" className="form-input" value={ancForm.respiratoryRate}
                                         onChange={e => setANCForm({ ...ancForm, respiratoryRate: e.target.value })} placeholder="e.g. 18"
                                         style={Number(ancForm.respiratoryRate) > 24 ? { borderColor: 'var(--alert-red)', background: 'rgba(220,38,38,0.04)' } : {}} />
@@ -904,7 +900,7 @@ export default function MaternityTracker() {
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Temperature (°C) <span className="label-marathi">तापमान</span></label>
+                                    <label className="form-label">{t('maternity.temperature')}</label>
                                     <input type="number" step="0.1" className="form-input" value={ancForm.temperature}
                                         onChange={e => setANCForm({ ...ancForm, temperature: e.target.value })} placeholder="e.g. 36.6"
                                         style={Number(ancForm.temperature) >= 38 ? { borderColor: 'var(--alert-red)', background: 'rgba(220,38,38,0.04)' } : {}} />
@@ -921,7 +917,7 @@ export default function MaternityTracker() {
 
                             {/* ──── SECTION B: Danger Signs ──── */}
                             <div className="ds-section-header" style={{ color: 'var(--alert-red)' }}>
-                                <AlertCircle size={15} /> B. Maternal Danger Signs <span className="text-marathi" style={{ fontSize: '0.72rem' }}>(धोक्याची चिन्हे)</span>
+                                <AlertCircle size={15} /> {t('maternity.dangerSigns')}
                             </div>
                             <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>If ANY is checked → HIGH Risk → Immediate PHC Escalation</p>
                             <div className="ds-danger-grid">
@@ -932,7 +928,7 @@ export default function MaternityTracker() {
                                         <span className="ds-danger-icon">{ds.icon}</span>
                                         <div>
                                             <div style={{ fontWeight: 600, fontSize: '0.76rem' }}>{ds.label}</div>
-                                            <div className="text-marathi" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{ds.labelMr}</div>
+
                                         </div>
                                     </button>
                                 ))}
@@ -940,7 +936,7 @@ export default function MaternityTracker() {
 
                             {/* ──── SECTION C: Moderate Risk ──── */}
                             <div className="ds-section-header" style={{ color: 'var(--accent-saffron)', marginTop: '1rem' }}>
-                                <Shield size={15} /> C. Moderate Risk Indicators <span className="text-marathi" style={{ fontSize: '0.72rem' }}>(मध्यम जोखीम)</span>
+                                <Shield size={15} /> {t('maternity.moderateRisk')}
                             </div>
                             <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>Not emergency, but escalate for review</p>
                             <div className="ds-moderate-grid">
@@ -950,7 +946,7 @@ export default function MaternityTracker() {
                                         <div className="ds-moderate-check">{ancForm.moderateRisks.includes(mr.key) ? '☑' : '☐'}</div>
                                         <div>
                                             <div style={{ fontWeight: 600, fontSize: '0.76rem' }}>{mr.label}</div>
-                                            <div className="text-marathi" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{mr.labelMr}</div>
+
                                         </div>
                                     </label>
                                 ))}
@@ -978,23 +974,23 @@ export default function MaternityTracker() {
 
                             {/* ──── Original ANC Fields ──── */}
                             <div className="ds-section-header" style={{ marginTop: '1rem' }}>
-                                <Activity size={15} /> D. Clinical Measurements <span className="text-marathi text-muted" style={{ fontSize: '0.72rem' }}>(वैद्यकीय मोजमापे)</span>
+                                <Activity size={15} /> {t('maternity.clinicalMeasurements')}
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Weight (kg) <span className="label-marathi">वजन</span></label>
+                                    <label className="form-label">{t('maternity.weight')}</label>
                                     <input type="number" step="0.1" className="form-input" value={ancForm.weight}
                                         onChange={e => setANCForm({ ...ancForm, weight: e.target.value })} placeholder="e.g. 55" />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Hemoglobin (g/dL) <span className="label-marathi">हिमोग्लोबिन</span></label>
+                                    <label className="form-label">{t('maternity.hemoglobin')}</label>
                                     <input type="number" step="0.1" className="form-input" value={ancForm.hemoglobin}
                                         onChange={e => setANCForm({ ...ancForm, hemoglobin: e.target.value })} placeholder="e.g. 11.5" />
                                 </div>
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Urine Test <span className="label-marathi">मूत्र चाचणी</span></label>
+                                    <label className="form-label">{t('maternity.urineTest')}</label>
                                     <select className="form-input" value={ancForm.urineTest}
                                         onChange={e => setANCForm({ ...ancForm, urineTest: e.target.value })}>
                                         <option value="Normal">Normal</option>
@@ -1020,12 +1016,12 @@ export default function MaternityTracker() {
                                 <label className="maternity-checkbox">
                                     <input type="checkbox" checked={ancForm.ttDose}
                                         onChange={e => setANCForm({ ...ancForm, ttDose: e.target.checked })} />
-                                    <span>TT Injection Given <span className="label-marathi">टीटी दिले</span></span>
+                                    <span>{t('maternity.ttInjection')}</span>
                                 </label>
                                 <label className="maternity-checkbox">
                                     <input type="checkbox" checked={ancForm.ifaTablets}
                                         onChange={e => setANCForm({ ...ancForm, ifaTablets: e.target.checked })} />
-                                    <span>IFA Tablets Given <span className="label-marathi">आयएफए दिले</span></span>
+                                    <span>{t('maternity.ifaTablets')}</span>
                                 </label>
                             </div>
                             <div className="form-group">
@@ -1058,12 +1054,12 @@ export default function MaternityTracker() {
                         <form onSubmit={handleRecordDelivery}>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Delivery Date <span className="label-marathi">प्रसूती तारीख</span></label>
+                                    <label className="form-label">{t('maternity.deliveryDate')}</label>
                                     <input type="date" className="form-input" required value={deliveryForm.date}
                                         onChange={e => setDeliveryForm({ ...deliveryForm, date: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Type <span className="label-marathi">प्रकार</span></label>
+                                    <label className="form-label">{t('maternity.deliveryType')}</label>
                                     <select className="form-input" value={deliveryForm.type}
                                         onChange={e => setDeliveryForm({ ...deliveryForm, type: e.target.value })}>
                                         <option value="Normal">Normal Delivery</option>
@@ -1074,7 +1070,7 @@ export default function MaternityTracker() {
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Place <span className="label-marathi">ठिकाण</span></label>
+                                    <label className="form-label">{t('maternity.deliveryPlace')}</label>
                                     <select className="form-input" value={deliveryForm.place}
                                         onChange={e => setDeliveryForm({ ...deliveryForm, place: e.target.value })}>
                                         <option value="Hospital">Hospital</option>
@@ -1132,7 +1128,7 @@ export default function MaternityTracker() {
                         </div>
                         <form onSubmit={handleAddPNC}>
                             <div className="form-group">
-                                <label className="form-label">Visit Type <span className="label-marathi">भेट प्रकार</span></label>
+                                <label className="form-label">{t('maternity.visitType')}</label>
                                 <select className="form-input" value={pncForm.visitType}
                                     onChange={e => setPNCForm({ ...pncForm, visitType: e.target.value })}>
                                     {PNC_SCHEDULE.map(s => (
@@ -1155,7 +1151,7 @@ export default function MaternityTracker() {
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label">Breastfeeding <span className="label-marathi">स्तनपान</span></label>
+                                    <label className="form-label">{t('maternity.breastfeeding')}</label>
                                     <select className="form-input" value={pncForm.breastfeeding}
                                         onChange={e => setPNCForm({ ...pncForm, breastfeeding: e.target.value })}>
                                         <option value="Exclusive">Exclusive</option>
@@ -1190,7 +1186,7 @@ export default function MaternityTracker() {
                             <div className="form-group">
                                 <label className="form-label">
                                     <Syringe size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                                    Baby Immunizations <span className="label-marathi">लसीकरण</span>
+                                    {t('maternity.babyImmunizations')}
                                 </label>
                                 <div className="maternity-risk-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                                     {BABY_IMMUNIZATIONS.map(im => (

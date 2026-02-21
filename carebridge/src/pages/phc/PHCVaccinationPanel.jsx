@@ -25,6 +25,7 @@ import {
     Calendar,
     Activity,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PHCVaccinationPanel() {
     const [data, setData] = useState({ villages: [], patients: [], totals: { totalChildren: 0, fullyVaccinated: 0, due: 0, overdue: 0 } });
@@ -33,6 +34,7 @@ export default function PHCVaccinationPanel() {
     const [expandedPatient, setExpandedPatient] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterVillage, setFilterVillage] = useState('all');
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadData();
@@ -119,7 +121,7 @@ export default function PHCVaccinationPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{totals.totalChildren}</div>
-                        <div className="phc-mat-stat-label">Children Tracked<span className="text-marathi"> मुले</span></div>
+                        <div className="phc-mat-stat-label">{t('vaccination.childrenTracked')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -128,7 +130,7 @@ export default function PHCVaccinationPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{totals.due}</div>
-                        <div className="phc-mat-stat-label">Total Due<span className="text-marathi"> बाकी</span></div>
+                        <div className="phc-mat-stat-label">{t('vaccination.totalDue')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -137,7 +139,7 @@ export default function PHCVaccinationPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{totals.overdue}</div>
-                        <div className="phc-mat-stat-label">Total Overdue<span className="text-marathi"> विलंबित</span></div>
+                        <div className="phc-mat-stat-label">{t('vaccination.totalOverdue')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -146,7 +148,7 @@ export default function PHCVaccinationPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{coveragePct}%</div>
-                        <div className="phc-mat-stat-label">Coverage<span className="text-marathi"> टक्केवारी</span></div>
+                        <div className="phc-mat-stat-label">{t('vaccination.coverage')}</div>
                     </div>
                 </div>
             </div>
@@ -156,8 +158,7 @@ export default function PHCVaccinationPanel() {
                 <div className="phc-mat-alert-section" style={{ marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.6rem', fontWeight: 700, color: '#DC2626', fontSize: '0.88rem' }}>
                         <AlertTriangle size={16} />
-                        Missed Immunization Alerts ({missedAlerts.length})
-                        <span className="text-marathi text-muted" style={{ fontSize: '0.72rem', fontWeight: 400 }}> लसीकरण चेतावणी</span>
+                        {t('vaccination.missedAlerts', { count: missedAlerts.length })}
                     </div>
                     <div className="phc-mat-alert-list">
                         {missedAlerts.slice(0, 5).map(p => (
@@ -216,8 +217,7 @@ export default function PHCVaccinationPanel() {
             <div className="card" style={{ marginBottom: '1.25rem' }}>
                 <div className="card-header">
                     <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Syringe size={18} /> Village-wise Coverage
-                        <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>गावनिहाय लसीकरण</span>
+                        <Syringe size={18} /> {t('vaccination.villageCoverage')}
                     </h3>
                 </div>
                 {villages.length === 0 ? (

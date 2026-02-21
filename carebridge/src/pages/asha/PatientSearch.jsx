@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchPatients } from '../../services/patientService';
+import { useTranslation } from 'react-i18next';
 import { Search, Home, MapPin } from 'lucide-react';
 
 export default function PatientSearch() {
@@ -14,6 +15,7 @@ export default function PatientSearch() {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -42,14 +44,14 @@ export default function PatientSearch() {
                 <form onSubmit={handleSearch}>
                     <div className="form-group" style={{ marginBottom: '1rem' }}>
                         <label className="form-label">
-                            Search By <span className="label-marathi">शोधा</span>
+                            {t('patient.searchBy')}
                         </label>
                         <div className="radio-group">
                             {[
-                                { value: 'name', label: 'Name' },
-                                { value: 'patientId', label: 'Patient ID' },
-                                { value: 'houseNumber', label: 'House No.' },
-                                { value: 'familyId', label: 'Family ID' },
+                                { value: 'name', label: t('patientSearch.name') },
+                                { value: 'patientId', label: t('patientSearch.patientId') },
+                                { value: 'houseNumber', label: t('patientSearch.houseNo') },
+                                { value: 'familyId', label: t('patientSearch.familyId') },
                             ].map((opt) => (
                                 <label key={opt.value} className={`radio-option ${searchField === opt.value ? 'selected' : ''}`}>
                                     <input
@@ -72,11 +74,11 @@ export default function PatientSearch() {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder={`Search by ${searchField}...`}
+                                placeholder={t('patientSearch.searchByPlaceholder', { field: searchField })}
                             />
                         </div>
                         <button type="submit" className="btn btn-primary" disabled={loading}>
-                            {loading ? 'Searching...' : 'Search'}
+                            {loading ? t('common.loading') : t('common.search')}
                         </button>
                     </div>
                 </form>
@@ -87,7 +89,7 @@ export default function PatientSearch() {
                 <div className="loading-spinner">
                     <div>
                         <div className="spinner"></div>
-                        <div className="loading-text">Searching patients...</div>
+                        <div className="loading-text">{t('messageLog.searchingPatients')}</div>
                     </div>
                 </div>
             )}
@@ -96,7 +98,7 @@ export default function PatientSearch() {
                 <div className="card">
                     <div className="empty-state">
                         <div className="empty-icon"><Search size={48} strokeWidth={1} /></div>
-                        <p>No patients found matching "{searchTerm}"</p>
+                        <p>{t('patient.noPatients')}</p>
                     </div>
                 </div>
             )}
@@ -117,7 +119,7 @@ export default function PatientSearch() {
                                 <div className="patient-info">
                                     <div className="patient-name">{patient.name}</div>
                                     <div className="patient-meta">
-                                        <span>Age: {patient.age}</span>
+                                        <span>{t('patientSearch.age')} {patient.age}</span>
                                         <span>{patient.gender}</span>
                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Home size={12} /> {patient.houseNumber}</span>
                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={12} /> {patient.village}</span>

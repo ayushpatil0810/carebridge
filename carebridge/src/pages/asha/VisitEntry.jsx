@@ -37,6 +37,7 @@ import {
     HelpCircle,
     Zap,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ADVISORY_ICONS = {
     '💧': Droplets,
@@ -54,6 +55,7 @@ export default function VisitEntry() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user, userName } = useAuth();
+    const { t } = useTranslation();
 
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -93,10 +95,10 @@ export default function VisitEntry() {
 
     // Escalation context
     const ESCALATION_REASONS = [
-        { key: 'high_news2', label: 'High NEWS2 Score', icon: Zap },
-        { key: 'red_flag', label: 'Red Flag Concern', icon: Flag },
-        { key: 'clinical_doubt', label: 'Clinical Doubt', icon: HelpCircle },
-        { key: 'repeat_visit', label: 'Repeat Visit', icon: RotateCcw },
+        { key: 'high_news2', label: t('visitEntry.highNEWS2Score'), icon: Zap },
+        { key: 'red_flag', label: t('visitEntry.redFlagConcern'), icon: Flag },
+        { key: 'clinical_doubt', label: t('visitEntry.clinicalDoubt'), icon: HelpCircle },
+        { key: 'repeat_visit', label: t('visitEntry.repeatVisit'), icon: RotateCcw },
     ];
     const [escalationReasons, setEscalationReasons] = useState([]);
     const [showEscalation, setShowEscalation] = useState(false);
@@ -227,7 +229,7 @@ export default function VisitEntry() {
             <div className="loading-spinner">
                 <div>
                     <div className="spinner"></div>
-                    <div className="loading-text">Loading patient...</div>
+                    <div className="loading-text">{t('visitEntry.loadingPatient')}</div>
                 </div>
             </div>
         );
@@ -238,7 +240,7 @@ export default function VisitEntry() {
             <div className="card">
                 <div className="empty-state">
                     <div className="empty-icon"><AlertTriangle size={48} strokeWidth={1} /></div>
-                    <p>Patient not found</p>
+                    <p>{t('visitEntry.patientNotFound')}</p>
                 </div>
             </div>
         );
@@ -254,7 +256,7 @@ export default function VisitEntry() {
                     </div>
                     <div>
                         <div style={{ fontWeight: 600 }}>{patient.name}</div>
-                        <div className="text-muted">{patient.age} yrs • {patient.gender} • {patient.village}</div>
+                        <div className="text-muted">{patient.age} {t('patientProfile.yrs')} • {patient.gender} • {patient.village}</div>
                     </div>
                     <span className="badge badge-indigo" style={{ marginLeft: 'auto' }}>{patient.patientId}</span>
                 </div>
@@ -265,7 +267,7 @@ export default function VisitEntry() {
                 <div className="card-header">
                     <h2 className="card-title">
                         <Stethoscope size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />
-                        Chief Complaint <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(मुख्य तक्रार)</span>
+                        {t('visit.chiefComplaint')}
                     </h2>
                 </div>
 
@@ -274,21 +276,21 @@ export default function VisitEntry() {
                         className="form-input"
                         value={chiefComplaint}
                         onChange={(e) => setChiefComplaint(e.target.value)}
-                        placeholder="Describe the patient's main complaint..."
+                        placeholder={t('visitEntry.complaintPlaceholder')}
                         rows={3}
                     />
                 </div>
 
                 <div className="form-group">
                     <label className="form-label">
-                        Duration of Symptoms (days) <span className="label-marathi">लक्षणांचा कालावधी</span>
+                        {t('visit.symptomDuration')}
                     </label>
                     <input
                         type="number"
                         className="form-input"
                         value={symptomDuration}
                         onChange={(e) => setSymptomDuration(e.target.value)}
-                        placeholder="Number of days"
+                        placeholder={t('visitEntry.daysPlaceholder')}
                         min="0"
                         style={{ maxWidth: '200px' }}
                     />
@@ -300,13 +302,13 @@ export default function VisitEntry() {
                 <div className="card-header">
                     <h2 className="card-title">
                         <Activity size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />
-                        Vitals <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(शारीरिक चिन्हे)</span>
+                        {t('visit.vitals')}
                     </h2>
                 </div>
 
                 <div className="form-row-3">
                     <div className="form-group">
-                        <label className="form-label">Respiratory Rate <span className="label-marathi">श्वसन दर</span></label>
+                        <label className="form-label">{t('visit.respiratoryRate')}</label>
                         <input
                             type="number"
                             className="form-input"
@@ -317,7 +319,7 @@ export default function VisitEntry() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Pulse Rate <span className="label-marathi">नाडी दर</span></label>
+                        <label className="form-label">{t('visit.pulseRate')}</label>
                         <input
                             type="number"
                             className="form-input"
@@ -328,7 +330,7 @@ export default function VisitEntry() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Temperature <span className="label-marathi">तापमान</span></label>
+                        <label className="form-label">{t('visit.temperature')}</label>
                         <input
                             type="number"
                             step="0.1"
@@ -343,8 +345,8 @@ export default function VisitEntry() {
                 <div className="form-row">
                     <div className="form-group">
                         <label className="form-label">
-                            SpO2 <span className="label-marathi">ऑक्सिजन</span>
-                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>(Optional)</span>
+                            {t('visit.spo2')}
+                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>{t('visitEntry.optional')}</span>
                         </label>
                         <input
                             type="number"
@@ -357,8 +359,8 @@ export default function VisitEntry() {
 
                     <div className="form-group">
                         <label className="form-label">
-                            Systolic BP <span className="label-marathi">रक्तदाब</span>
-                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>(Optional)</span>
+                            {t('visit.systolicBP')}
+                            <span className="text-muted" style={{ marginLeft: '0.5rem' }}>{t('visitEntry.optional')}</span>
                         </label>
                         <input
                             type="number"
@@ -372,7 +374,7 @@ export default function VisitEntry() {
 
                 <div className="form-group">
                     <label className="form-label">
-                        Consciousness Level <span className="label-marathi">चेतना पातळी</span>
+                        {t('visit.consciousnessLevel')}
                     </label>
                     <div className="radio-group">
                         {['Alert', 'Voice', 'Pain', 'Unresponsive'].map((level) => (
@@ -384,7 +386,7 @@ export default function VisitEntry() {
                                     checked={consciousness === level}
                                     onChange={(e) => setConsciousness(e.target.value)}
                                 />
-                                {level}
+                                {t(`visitEntry.${level.toLowerCase()}`)}
                             </label>
                         ))}
                     </div>
@@ -395,7 +397,7 @@ export default function VisitEntry() {
             <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="card-header">
                     <h2 className="card-title" style={{ color: 'var(--alert-red)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Flag size={18} /> Red Flag Checklist <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(धोक्याची चिन्हे)</span>
+                        <Flag size={18} /> {t('visit.redFlagChecklist')}
                     </h2>
                 </div>
 
@@ -420,7 +422,7 @@ export default function VisitEntry() {
                     onClick={handleCalculateNEWS2}
                     style={{ marginBottom: '1.5rem' }}
                 >
-                    <Calculator size={20} /> Calculate NEWS2
+                    <Calculator size={20} /> {t('visit.calculateNEWS2')}
                 </button>
             )}
 
@@ -429,11 +431,10 @@ export default function VisitEntry() {
                 <div className="repeat-visit-alert" style={{ marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
                         <TriangleAlert size={20} />
-                        <strong>Recent Visit Detected</strong>
+                        <strong>{t('visitEntry.recentVisitDetected')}</strong>
                     </div>
                     <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
-                        This patient had <strong>{recentVisits.length} visit{recentVisits.length > 1 ? 's' : ''}</strong> in the last 48 hours.
-                        Consider repeat visit patterns before escalation.
+                        {t('visitEntry.recentVisitWarning', { count: recentVisits.length })}
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {recentVisits.slice(0, 3).map((v, i) => (
@@ -442,7 +443,7 @@ export default function VisitEntry() {
                                     {v.riskLevel || 'Green'}
                                 </span>
                                 <span style={{ fontSize: '0.78rem' }}>
-                                    Score {v.news2Score ?? '—'} • {v.chiefComplaint ? v.chiefComplaint.substring(0, 40) : 'No complaint'}
+                                    Score {v.news2Score ?? '—'} • {v.chiefComplaint ? v.chiefComplaint.substring(0, 40) : t('visitEntry.noComplaint')}
                                 </span>
                                 <span className="text-muted" style={{ fontSize: '0.7rem', marginLeft: 'auto' }}>
                                     {v.createdAt?.toDate ? v.createdAt.toDate().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -467,7 +468,7 @@ export default function VisitEntry() {
                                 </div>
                             </div>
                             <span className={`badge badge-${news2Result.riskLevel.toLowerCase()}`} style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
-                                {advisory?.level || news2Result.riskLevel} Risk
+                                {advisory?.level || news2Result.riskLevel} {t('visitEntry.risk')}
                             </span>
                         </div>
 
@@ -475,7 +476,7 @@ export default function VisitEntry() {
                         {news2Result.isPartial && (
                             <div className="warning-banner" style={{ marginBottom: '1rem' }}>
                                 <span className="warning-icon"><AlertTriangle size={18} /></span>
-                                Partial scoring — missing: {news2Result.missingParams.join(', ')}
+                                {t('visitEntry.partialScoring')} {news2Result.missingParams.join(', ')}
                             </div>
                         )}
 
@@ -483,7 +484,7 @@ export default function VisitEntry() {
                         {news2Result.hasRedFlags && (
                             <div className="warning-banner" style={{ marginBottom: '1rem', background: 'var(--alert-red-bg)', borderColor: 'var(--alert-red-light)', color: 'var(--alert-red)' }}>
                                 <span className="warning-icon"><ShieldAlert size={18} /></span>
-                                Red flags detected — risk auto-elevated to HIGH
+                                {t('visitEntry.redFlagsDetected')}
                             </div>
                         )}
 
@@ -492,7 +493,7 @@ export default function VisitEntry() {
                             {news2Result.breakdown.map((param, idx) => (
                                 <div key={idx} className="news2-param">
                                     <span className="news2-param-name">
-                                        {param.name} <span className="text-marathi" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({param.marathiName})</span>
+                                        {param.name}
                                     </span>
                                     <div className="news2-param-detail">
                                         <span className="news2-param-value">{param.value}</span>
@@ -505,7 +506,7 @@ export default function VisitEntry() {
                         </div>
 
                         <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem', fontStyle: 'italic' }}>
-                            Calculated using NEWS2 Framework
+                            {t('visitEntry.calculatedUsing')}
                         </div>
                     </div>
 
@@ -514,9 +515,9 @@ export default function VisitEntry() {
                         <div className="risk-explanation-panel" style={{ marginBottom: '1.5rem' }}>
                             <div className="risk-explanation-header">
                                 <Info size={18} />
-                                <span>Why {news2Result.riskLevel === 'Red' ? 'High' : 'Medium'} Risk?</span>
-                                <span className="text-marathi" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-                                    ({news2Result.riskLevel === 'Red' ? 'उच्च धोका का?' : 'मध्यम धोका का?'})
+                                <span>{t('visitEntry.whyRisk', { level: news2Result.riskLevel === 'Red' ? t('visit.highRisk') : t('visit.moderateRisk') })}</span>
+                                <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                                    ({news2Result.riskLevel === 'Red' ? t('visit.highRisk') : t('visit.moderateRisk')})
                                 </span>
                             </div>
 
@@ -540,18 +541,18 @@ export default function VisitEntry() {
                                     <div key={`rf-${idx}`} className="risk-contributor-row red-flag-row">
                                         <div className="contributor-param">
                                             <Flag size={12} color="var(--alert-red)" />
-                                            Red Flag: {flag}
+                                            {t('visitEntry.redFlagLabel')} {flag}
                                         </div>
                                         <div className="contributor-detail">
-                                            <span className="contributor-score score-high">Auto-elevate</span>
+                                            <span className="contributor-score score-high">{t('visitEntry.autoElevate')}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
                             <div className="risk-explanation-summary">
-                                Total: <strong>{news2Result.totalScore} points</strong>
-                                {news2Result.hasRedFlags && ' + Red Flag auto-elevation'}
+                                {t('visitEntry.total')} <strong>{news2Result.totalScore} {t('visitEntry.points')}</strong>
+                                {news2Result.hasRedFlags && ` ${t('visitEntry.redFlagAutoElevation')}`}
                                 &nbsp;→ <span className={`badge badge-${news2Result.riskLevel.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>{news2Result.riskLevel} Risk</span>
                             </div>
                         </div>
@@ -561,7 +562,7 @@ export default function VisitEntry() {
                     {advisory && (
                         <div className="advisory-box" style={{ marginBottom: '1.5rem' }}>
                             <div className="advisory-label">
-                                Risk Advisory — {advisory.level} <span className="text-marathi">({advisory.levelMarathi})</span>
+                                {t('visitEntry.riskAdvisoryLabel')} {advisory.level}
                             </div>
                             {advisory.items.map((item, idx) => {
                                 const IconComp = ADVISORY_ICONS[item.icon] || Activity;
@@ -573,7 +574,7 @@ export default function VisitEntry() {
                                 );
                             })}
                             <div className="advisory-disclaimer">
-                                Guideline-based advisory (Non-diagnostic)
+                                {t('visitEntry.guidelineDisclaimer')}
                             </div>
                         </div>
                     )}
@@ -586,34 +587,34 @@ export default function VisitEntry() {
                             disabled={saving}
                             style={{ marginBottom: '1rem' }}
                         >
-                            <Save size={18} /> {saving ? 'Saving Visit...' : 'Save Visit Record'}
+                            <Save size={18} /> {saving ? t('visit.saving') : t('visit.saveVisit')}
                         </button>
                     ) : (
                         <>
                             <div className="card" style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                                     <div style={{ marginBottom: '0.5rem' }}><CheckCircle2 size={36} color="var(--green)" /></div>
-                                    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Visit Saved Successfully</div>
+                                    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('visitEntry.visitSavedSuccess')}</div>
 
                                     {!reviewRequested ? (
                                         <div>
                                             {!showEscalation ? (
                                                 <>
                                                     <p className="text-muted" style={{ marginBottom: '1rem' }}>
-                                                        Would you like to request a PHC doctor review?
+                                                        {t('visitEntry.phcReviewQuestion')}
                                                     </p>
                                                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                                                         <button
                                                             className="btn btn-primary"
                                                             onClick={() => setShowEscalation(true)}
                                                         >
-                                                            <Send size={16} /> Request PHC Review
+                                                            <Send size={16} /> {t('visitEntry.requestPHCReview')}
                                                         </button>
                                                         <button
                                                             className="btn btn-danger"
                                                             onClick={() => { setEscalationReasons(['emergency']); handleRequestReview(true); }}
                                                         >
-                                                            <ShieldAlert size={16} /> Mark as Emergency
+                                                            <ShieldAlert size={16} /> {t('visitEntry.markEmergency')}
                                                         </button>
                                                     </div>
                                                 </>
@@ -622,11 +623,11 @@ export default function VisitEntry() {
                                                 <div className="escalation-context">
                                                     <div className="escalation-title">
                                                         <ClipboardList size={16} />
-                                                        <span>Reason for Escalation</span>
-                                                        <span className="text-marathi" style={{ fontSize: '0.7rem', opacity: 0.7 }}>(संदर्भ कारण निवडा)</span>
+                                                        <span>{t('visitEntry.reasonForEscalation')}</span>
+                                                        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{t('visit.selectReferralReason')}</span>
                                                     </div>
                                                     <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.75rem' }}>
-                                                        Select one or more reasons to provide context to the PHC doctor:
+                                                        {t('visitEntry.selectOneOrMore')}
                                                     </p>
                                                     <div className="escalation-reasons-grid">
                                                         {ESCALATION_REASONS.map(r => {
@@ -651,10 +652,10 @@ export default function VisitEntry() {
                                                             onClick={() => handleRequestReview(false)}
                                                             disabled={escalationReasons.length === 0}
                                                         >
-                                                            <Send size={14} /> Submit to PHC
+                                                            <Send size={14} /> {t('visitEntry.submitToPHC')}
                                                         </button>
                                                         <button className="btn btn-ghost" onClick={() => setShowEscalation(false)}>
-                                                            Cancel
+                                                            {t('common.cancel')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -663,7 +664,7 @@ export default function VisitEntry() {
                                     ) : (
                                         <div>
                                             <span className="status-badge pending" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
-                                                PHC Review Requested
+                                                {t('visitEntry.phcReviewRequested')}
                                             </span>
                                             {escalationReasons.length > 0 && (
                                                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -675,7 +676,7 @@ export default function VisitEntry() {
                                                 </div>
                                             )}
                                             <p className="text-muted" style={{ marginTop: '0.75rem' }}>
-                                                The PHC doctor will review this case shortly.
+                                                {t('visitEntry.phcWillReview')}
                                             </p>
                                         </div>
                                     )}
@@ -697,7 +698,7 @@ export default function VisitEntry() {
                                         onClick={() => navigate(`/patient/${id}`)}
                                         style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                     >
-                                        <ArrowLeft size={14} /> Back to Patient Profile
+                                        <ArrowLeft size={14} /> {t('visitEntry.backToProfile')}
                                     </button>
                                 </div>
                             </div>
@@ -706,12 +707,12 @@ export default function VisitEntry() {
                             {savedVisitId && (
                                 <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--accent-indigo)' }}>
                                     <h4 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                                        <CalendarPlus size={16} /> Schedule Follow-Up
+                                        <CalendarPlus size={16} /> {t('visitEntry.scheduleFollowUp')}
                                     </h4>
                                     {followUpScheduled ? (
                                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                                             <CheckCircle2 size={28} color="var(--green)" />
-                                            <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>Follow-up scheduled for {followUpDate} at {followUpTime}</p>
+                                            <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>{t('visitEntry.followUpScheduledFor', { date: followUpDate, time: followUpTime })}</p>
                                         </div>
                                     ) : (
                                         <>
@@ -734,7 +735,7 @@ export default function VisitEntry() {
                                             <input
                                                 type="text"
                                                 className="form-input"
-                                                placeholder="Reason (e.g., Recheck temperature)"
+                                                placeholder={t('visitEntry.reasonPlaceholder')}
                                                 value={followUpReason}
                                                 onChange={e => setFollowUpReason(e.target.value)}
                                                 style={{ marginBottom: '0.5rem' }}
@@ -744,7 +745,7 @@ export default function VisitEntry() {
                                                 onClick={handleScheduleFollowUp}
                                                 disabled={!followUpDate || schedulingFollowUp}
                                             >
-                                                <CalendarPlus size={14} /> {schedulingFollowUp ? 'Scheduling…' : 'Schedule Follow-Up'}
+                                                <CalendarPlus size={14} /> {schedulingFollowUp ? t('visitEntry.scheduling') : t('visitEntry.scheduleFollowUpBtn')}
                                             </button>
                                         </>
                                     )}

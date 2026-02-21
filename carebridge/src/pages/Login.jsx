@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Heart, Mail, Lock, User, AlertTriangle } from 'lucide-react';
 
 export default function Login() {
@@ -18,6 +19,7 @@ export default function Login() {
 
     const { login, register } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -53,8 +55,8 @@ export default function Login() {
                     <div className="login-icon">
                         <Heart size={40} color="var(--accent-saffron)" strokeWidth={1.5} />
                     </div>
-                    <h1>CareBridge</h1>
-                    <p className="login-subtitle">Clinical Support System</p>
+                    <h1>{t('app.name')}</h1>
+                    <p className="login-subtitle">{t('app.subtitle')}</p>
                 </div>
 
                 <div className="warli-divider" style={{ marginBottom: '1.5rem' }}></div>
@@ -64,7 +66,7 @@ export default function Login() {
                         <div className="form-group">
                             <label className="form-label">
                                 <User size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
-                                Full Name <span className="label-marathi">पूर्ण नाव</span>
+                                {t('login.fullName')}
                             </label>
                             <input
                                 type="text"
@@ -80,7 +82,7 @@ export default function Login() {
                     <div className="form-group">
                         <label className="form-label">
                             <Mail size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
-                            Email <span className="label-marathi">ईमेल</span>
+                            {t('login.email')}
                         </label>
                         <input
                             type="email"
@@ -95,7 +97,7 @@ export default function Login() {
                     <div className="form-group">
                         <label className="form-label">
                             <Lock size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
-                            Password <span className="label-marathi">पासवर्ड</span>
+                            {t('login.password')}
                         </label>
                         <input
                             type="password"
@@ -111,7 +113,7 @@ export default function Login() {
                     {isRegister && (
                         <div className="form-group">
                             <label className="form-label">
-                                Role <span className="label-marathi">भूमिका</span>
+                                {t('login.role')}
                             </label>
                             <div className="radio-group">
                                 <label className={`radio-option ${role === 'asha' ? 'selected' : ''}`}>
@@ -150,7 +152,7 @@ export default function Login() {
                         className="btn btn-primary btn-lg btn-block"
                         disabled={loading}
                     >
-                        {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
+                        {loading ? t('common.loading') : isRegister ? t('login.signUp') : t('login.signIn')}
                     </button>
                 </form>
 
@@ -163,8 +165,8 @@ export default function Login() {
                         }}
                     >
                         {isRegister
-                            ? 'Already have an account? Sign In'
-                            : "Don't have an account? Register"}
+                            ? t('login.haveAccount')
+                            : t('login.noAccount')}
                     </button>
                 </div>
             </div>

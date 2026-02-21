@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMessageLogsByUser } from '../../services/messageService';
 import {
@@ -28,6 +29,7 @@ const TYPE_LABELS = {
 };
 
 export default function MessageLog() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export default function MessageLog() {
     if (loading) {
         return (
             <div className="loading-spinner">
-                <div><div className="spinner"></div><div className="loading-text">Loading message log...</div></div>
+                <div><div className="spinner"></div><div className="loading-text">{t('messageLog.loadingLog')}</div></div>
             </div>
         );
     }
@@ -83,10 +85,10 @@ export default function MessageLog() {
         <div>
             <div className="card" style={{ marginBottom: '1rem' }}>
                 <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                    <FileText size={18} /> Message Log
+                    <FileText size={18} /> {t('messageLog.title')}
                 </h3>
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-                    Complete record of all messages sent. {logs.length} message{logs.length !== 1 ? 's' : ''} logged.
+                    {t('messageLog.description', { count: logs.length })}
                 </p>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative', flex: '1 1 200px' }}>
@@ -94,7 +96,7 @@ export default function MessageLog() {
                         <input
                             type="text"
                             className="form-input"
-                            placeholder="Search patient or message…"
+                            placeholder={t('messageLog.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             style={{ paddingLeft: '36px' }}
@@ -106,9 +108,9 @@ export default function MessageLog() {
                         onChange={e => setFilterType(e.target.value)}
                         style={{ width: 'auto', padding: '6px 30px 6px 10px', fontSize: '0.8rem' }}
                     >
-                        <option value="">All Types</option>
-                        {uniqueTypes.map(t => (
-                            <option key={t} value={t}>{TYPE_LABELS[t]?.label || t}</option>
+                        <option value="">{t('messageLog.allTypes')}</option>
+                        {uniqueTypes.map(tp => (
+                            <option key={tp} value={tp}>{TYPE_LABELS[tp]?.label || tp}</option>
                         ))}
                     </select>
                 </div>
@@ -118,7 +120,7 @@ export default function MessageLog() {
                 <div className="card">
                     <div className="empty-state">
                         <div className="empty-icon"><MessageSquare size={48} strokeWidth={1} /></div>
-                        <p>No messages logged yet.</p>
+                        <p>{t('messageLog.noMessages')}</p>
                     </div>
                 </div>
             ) : (
@@ -136,17 +138,17 @@ export default function MessageLog() {
                                     </span>
                                 </div>
                                 <div className="msg-log-patient">
-                                    {log.patientName || 'Unknown Patient'}
+                                    {log.patientName || t('messageLog.unknownPatient')}}
                                     {log.patientId && <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '8px' }}>{log.patientId}</span>}
                                 </div>
                                 <div className="msg-log-text">{log.messageText}</div>
                                 <div className="msg-log-footer">
                                     <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                        Sent by: {log.sentByName || 'ASHA'}
+                                        {t('messageLog.sentBy')} {log.sentByName || 'ASHA'}
                                     </span>
                                     {log.visitId && (
                                         <span className="badge badge-indigo" style={{ fontSize: '0.65rem' }}>
-                                            Case Linked
+                                            {t('messageLog.caseLinked')}
                                         </span>
                                     )}
                                     <span className="msg-log-channel">

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function ClarificationResponse() {
+    const { t } = useTranslation();
     const { visitId } = useParams();
     const { userName } = useAuth();
     const navigate = useNavigate();
@@ -41,12 +43,12 @@ export default function ClarificationResponse() {
         try {
             const data = await getVisitById(visitId);
             if (!data) {
-                setError('Visit not found');
+                setError(t('clarification.visitNotFound'));
             } else {
                 setVisit(data);
             }
         } catch (err) {
-            setError('Error loading visit');
+            setError(t('clarification.errorLoading'));
         } finally {
             setLoading(false);
         }
@@ -61,10 +63,10 @@ export default function ClarificationResponse() {
                 responseText: responseText.trim(),
                 respondedBy: userName,
             });
-            setSuccess('Response submitted — case re-entered PHC review queue.');
+            setSuccess(t('clarification.responseSubmitted'));
             setTimeout(() => navigate('/dashboard'), 2000);
         } catch (err) {
-            setError('Failed to submit response: ' + err.message);
+            setError(t('clarification.failedSubmit') + err.message);
         } finally {
             setSubmitting(false);
         }
@@ -75,7 +77,7 @@ export default function ClarificationResponse() {
             <div className="loading-spinner">
                 <div>
                     <div className="spinner"></div>
-                    <div className="loading-text">Loading...</div>
+                    <div className="loading-text">{t('clarification.loading')}</div>
                 </div>
             </div>
         );
@@ -87,7 +89,7 @@ export default function ClarificationResponse() {
                 <AlertCircle size={40} color="var(--alert-red)" />
                 <p style={{ marginTop: '1rem' }}>{error}</p>
                 <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>
-                    <ArrowLeft size={16} /> Back to Dashboard
+                    <ArrowLeft size={16} /> {t('clarification.backToDashboard')}
                 </button>
             </div>
         );
@@ -96,7 +98,7 @@ export default function ClarificationResponse() {
     return (
         <div style={{ maxWidth: '700px' }}>
             <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{ marginBottom: '1rem' }}>
-                <ArrowLeft size={16} /> Back to Dashboard
+                <ArrowLeft size={16} /> {t('clarification.backToDashboard')}
             </button>
 
             {success && (
@@ -115,7 +117,7 @@ export default function ClarificationResponse() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h3 style={{ fontWeight: 600, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <User size={18} /> {visit?.patientName || 'Unknown Patient'}
+                            <User size={18} /> {visit?.patientName || t('clarification.unknownPatient')}
                         </h3>
                         <div className="text-muted" style={{ marginTop: '4px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             <span>{visit?.patientAge || '—'}</span>
@@ -128,7 +130,7 @@ export default function ClarificationResponse() {
                     </span>
                 </div>
                 <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--bg-primary)', borderRadius: '6px', fontSize: '0.9rem' }}>
-                    <span className="detail-label">Chief Complaint: </span>
+                    <span className="detail-label">{t('clarification.chiefComplaint')} </span>
                     {visit?.chiefComplaint || '—'}
                 </div>
             </div>
@@ -136,7 +138,7 @@ export default function ClarificationResponse() {
             {/* Doctor's Question */}
             <div className="card" style={{ marginBottom: '1rem', borderColor: 'var(--yellow)' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '1rem', color: '#9A7B12', marginBottom: '0.75rem' }}>
-                    <MessageCircleQuestion size={18} /> Doctor's Question
+                    <MessageCircleQuestion size={18} /> {t('clarification.doctorsQuestion')}
                 </h3>
                 <div style={{
                     background: 'var(--yellow-bg)',
@@ -146,11 +148,11 @@ export default function ClarificationResponse() {
                     lineHeight: '1.6',
                     borderLeft: '3px solid var(--yellow)',
                 }}>
-                    {visit?.clarificationMessage || 'No specific question provided.'}
+                    {visit?.clarificationMessage || t('clarification.noQuestion')}
                 </div>
                 {visit?.reviewedBy && (
                     <div className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-                        Asked by: {visit.reviewedBy}
+                        {t('clarification.askedBy')} {visit.reviewedBy}
                     </div>
                 )}
             </div>
@@ -158,18 +160,18 @@ export default function ClarificationResponse() {
             {/* Response Form */}
             <div className="card">
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '1rem', marginBottom: '1rem' }}>
-                    <FileText size={18} /> Your Response
+                    <FileText size={18} /> {t('clarification.yourResponse')}
                 </h3>
                 <div className="form-group" style={{ marginBottom: '1rem' }}>
                     <textarea
                         className="form-input"
                         rows="5"
-                        placeholder="Provide additional details, observations, or updated clinical information that the doctor requested..."
+                        placeholder={t('clarification.responsePlaceholder')}
                         value={responseText}
                         onChange={e => setResponseText(e.target.value)}
                         disabled={success}
                     />
-                    <div className="form-hint">After submitting, this case will return to the PHC review queue.</div>
+                    <div className="form-hint">{t('clarification.afterSubmit')}</div>
                 </div>
                 <button
                     className="btn btn-primary btn-block"
@@ -177,9 +179,9 @@ export default function ClarificationResponse() {
                     disabled={submitting || !responseText.trim() || success}
                 >
                     {submitting ? (
-                        <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div> Submitting...</>
+                        <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div> {t('clarification.submitting')}</>
                     ) : (
-                        <><Send size={16} /> Submit Response</>
+                        <><Send size={16} /> {t('clarification.submitResponse')}</>
                     )}
                 </button>
             </div>

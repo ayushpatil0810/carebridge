@@ -33,9 +33,11 @@ import {
     Plus,
     Shield,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function VaccinationTracker() {
     const { userName } = useAuth();
+    const { t } = useTranslation();
 
     // ── State ──
     const [patients, setPatients] = useState([]);
@@ -201,10 +203,7 @@ export default function VaccinationTracker() {
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
                     <div className="card-header">
                         <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Syringe size={22} /> Vaccination Tracker
-                            <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>
-                                (लसीकरण व्यवस्थापक)
-                            </span>
+                            <Syringe size={22} /> {t('pages.vaccinations')}
                         </h2>
                     </div>
                     <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
@@ -307,14 +306,12 @@ export default function VaccinationTracker() {
                         <p className="text-muted" style={{ fontSize: '0.8rem' }}>Auto-generate the vaccination schedule:</p>
                         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
                             <button className="btn btn-primary" onClick={() => handleAutoSchedule('child')} disabled={scheduling}>
-                                <Baby size={16} /> {scheduling ? 'Scheduling...' : 'Child Vaccines'}
-                                <span className="text-marathi" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>(बालक)</span>
+                                <Baby size={16} /> {scheduling ? t('common.loading') : t('vaccination.childVaccines')}
                             </button>
                             {selectedPatient.gender?.toLowerCase() === 'female' && (
                                 <button className="btn btn-secondary" onClick={() => handleAutoSchedule('maternal')} disabled={scheduling}
                                     style={{ borderColor: 'var(--accent-saffron)', color: 'var(--accent-saffron)' }}>
-                                    <Syringe size={16} /> {scheduling ? 'Scheduling...' : 'Maternal Vaccines (TT)'}
-                                    <span className="text-marathi" style={{ fontSize: '0.7rem', marginLeft: '4px' }}>(माता)</span>
+                                    <Syringe size={16} /> {scheduling ? t('common.loading') : t('vaccination.maternalVaccines')}
                                 </button>
                             )}
                         </div>
@@ -453,7 +450,7 @@ export default function VaccinationTracker() {
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="form-label">
-                                    Date Given <span className="label-marathi">दिनांक</span>
+                                    {t('vaccination.dateGiven')}
                                 </label>
                                 <input type="date" className="form-input" required value={givenForm.givenDate}
                                     onChange={e => setGivenForm({ ...givenForm, givenDate: e.target.value })} />
@@ -461,7 +458,7 @@ export default function VaccinationTracker() {
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="form-label">
-                                    Notes (optional) <span className="label-marathi">टिपणी</span>
+                                    {t('vaccination.notes')}
                                 </label>
                                 <textarea className="form-input" rows="2" placeholder="Any observations..."
                                     value={givenForm.notes} onChange={e => setGivenForm({ ...givenForm, notes: e.target.value })} />

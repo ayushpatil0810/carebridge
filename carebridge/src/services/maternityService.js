@@ -261,30 +261,30 @@ export async function closeMaternityRecord(patientId, recordId) {
 
 // ── High Risk Factors constant ──
 export const HIGH_RISK_FACTORS = [
-    { key: 'age_above_35', label: 'Age > 35 years', labelMr: 'वय > ३५ वर्षे' },
-    { key: 'previous_csection', label: 'Previous C-Section', labelMr: 'मागील सिझेरियन' },
-    { key: 'anemia', label: 'Anemia (Hb < 7)', labelMr: 'अॅनिमिया' },
-    { key: 'hypertension', label: 'Hypertension', labelMr: 'उच्च रक्तदाब' },
-    { key: 'diabetes', label: 'Gestational Diabetes', labelMr: 'गर्भधारणा मधुमेह' },
-    { key: 'twin_pregnancy', label: 'Twin/Multiple Pregnancy', labelMr: 'जुळी गर्भधारणा' },
-    { key: 'rh_negative', label: 'Rh-Negative Blood', labelMr: 'Rh-निगेटिव्ह' },
-    { key: 'previous_loss', label: 'Previous Pregnancy Loss', labelMr: 'मागील गर्भपात' },
+    { key: 'age_above_35', label: 'Age > 35 years' },
+    { key: 'previous_csection', label: 'Previous C-Section' },
+    { key: 'anemia', label: 'Anemia (Hb < 7)' },
+    { key: 'hypertension', label: 'Hypertension' },
+    { key: 'diabetes', label: 'Gestational Diabetes' },
+    { key: 'twin_pregnancy', label: 'Twin/Multiple Pregnancy' },
+    { key: 'rh_negative', label: 'Rh-Negative Blood' },
+    { key: 'previous_loss', label: 'Previous Pregnancy Loss' },
 ];
 
 // ── ANC Schedule constant ──
 export const ANC_SCHEDULE = [
-    { number: 1, label: 'ANC 1st Visit', timing: 'Before 12 weeks', timingMr: '१२ आठवड्यांपूर्वी' },
-    { number: 2, label: 'ANC 2nd Visit', timing: '14–26 weeks', timingMr: '१४-२६ आठवडे' },
-    { number: 3, label: 'ANC 3rd Visit', timing: '28–34 weeks', timingMr: '२८-३४ आठवडे' },
-    { number: 4, label: 'ANC 4th Visit', timing: '36 weeks onwards', timingMr: '३६+ आठवडे' },
+    { number: 1, label: 'ANC 1st Visit', timing: 'Before 12 weeks' },
+    { number: 2, label: 'ANC 2nd Visit', timing: '14–26 weeks' },
+    { number: 3, label: 'ANC 3rd Visit', timing: '28–34 weeks' },
+    { number: 4, label: 'ANC 4th Visit', timing: '36 weeks onwards' },
 ];
 
 // ── PNC Schedule constant ──
 export const PNC_SCHEDULE = [
-    { key: 'Day 1', label: 'Day 1 (Within 24hrs)', labelMr: 'दिवस १' },
-    { key: 'Day 3', label: 'Day 3', labelMr: 'दिवस ३' },
-    { key: 'Day 7', label: 'Day 7', labelMr: 'दिवस ७' },
-    { key: 'Week 6', label: 'Week 6', labelMr: 'आठवडा ६' },
+    { key: 'Day 1', label: 'Day 1 (Within 24hrs)' },
+    { key: 'Day 3', label: 'Day 3' },
+    { key: 'Day 7', label: 'Day 7' },
+    { key: 'Week 6', label: 'Week 6' },
 ];
 
 // ── Baby Immunization checklist ──
@@ -300,27 +300,27 @@ export const BABY_IMMUNIZATIONS = [
 
 // ── Maternal Danger Signs (if ANY checked → HIGH RISK) ──
 export const MATERNAL_DANGER_SIGNS = [
-    { key: 'severe_headache', label: 'Severe persistent headache', labelMr: 'तीव्र सतत डोकेदुखी', icon: '🤕' },
-    { key: 'blurred_vision', label: 'Blurred vision / flashing lights', labelMr: 'धूसर दृष्टी / चमकणारा प्रकाश', icon: '👁️' },
-    { key: 'convulsions', label: 'Convulsions / fainting', labelMr: 'आकडी / बेशुद्धी', icon: '⚡' },
-    { key: 'severe_breathlessness', label: 'Severe breathlessness', labelMr: 'तीव्र श्वासोच्छ्वासाचा त्रास', icon: '😮‍💨' },
-    { key: 'chest_pain', label: 'Chest pain or rapid irregular heartbeat', labelMr: 'छातीत दुखणे / अनियमित हृदयस्पंदन', icon: '💓' },
-    { key: 'vaginal_bleeding', label: 'Vaginal bleeding (more than spotting)', labelMr: 'योनीतून रक्तस्राव', icon: '🩸' },
-    { key: 'fluid_leaking', label: 'Fluid leaking from vagina', labelMr: 'योनीतून पाणी गळणे', icon: '💧' },
-    { key: 'reduced_fetal_movement', label: 'Reduced or absent fetal movement', labelMr: 'बाळाची हालचाल कमी/बंद', icon: '👶' },
-    { key: 'severe_abdominal_pain', label: 'Severe abdominal pain', labelMr: 'तीव्र पोटदुखी', icon: '🤰' },
-    { key: 'leg_swelling_dvt', label: 'Severe leg swelling with pain (possible DVT)', labelMr: 'पाय सूज + वेदना (DVT)', icon: '🦵' },
-    { key: 'fever_chills', label: 'Fever with chills', labelMr: 'ताप + थंडी वाजणे', icon: '🤒' },
+    { key: 'severe_headache', label: 'Severe persistent headache', icon: '🤕' },
+    { key: 'blurred_vision', label: 'Blurred vision / flashing lights', icon: '👁️' },
+    { key: 'convulsions', label: 'Convulsions / fainting', icon: '⚡' },
+    { key: 'severe_breathlessness', label: 'Severe breathlessness', icon: '😮‍💨' },
+    { key: 'chest_pain', label: 'Chest pain or rapid irregular heartbeat', icon: '💓' },
+    { key: 'vaginal_bleeding', label: 'Vaginal bleeding (more than spotting)', icon: '🩸' },
+    { key: 'fluid_leaking', label: 'Fluid leaking from vagina', icon: '💧' },
+    { key: 'reduced_fetal_movement', label: 'Reduced or absent fetal movement', icon: '👶' },
+    { key: 'severe_abdominal_pain', label: 'Severe abdominal pain', icon: '🤰' },
+    { key: 'leg_swelling_dvt', label: 'Severe leg swelling with pain (possible DVT)', icon: '🦵' },
+    { key: 'fever_chills', label: 'Fever with chills', icon: '🤒' },
 ];
 
 // ── Moderate Risk Indicators (escalate for review, not emergency) ──
 export const MODERATE_RISK_INDICATORS = [
-    { key: 'persistent_dizziness', label: 'Persistent dizziness', labelMr: 'सतत चक्कर' },
-    { key: 'ongoing_vomiting', label: 'Ongoing vomiting (> 8 hrs)', labelMr: 'सतत उलट्या (> ८ तास)' },
-    { key: 'previous_csection_history', label: 'Previous C-section', labelMr: 'मागील सिझेरियन' },
-    { key: 'high_risk_pregnancy_history', label: 'History of high-risk pregnancy', labelMr: 'मागील धोकादायक गर्भधारणा' },
-    { key: 'gestational_diabetes_current', label: 'Gestational diabetes', labelMr: 'गर्भधारणा मधुमेह' },
-    { key: 'mild_swelling', label: 'Mild swelling of hands/face', labelMr: 'हात/चेहऱ्यावर हलकी सूज' },
+    { key: 'persistent_dizziness', label: 'Persistent dizziness' },
+    { key: 'ongoing_vomiting', label: 'Ongoing vomiting (> 8 hrs)' },
+    { key: 'previous_csection_history', label: 'Previous C-section' },
+    { key: 'high_risk_pregnancy_history', label: 'History of high-risk pregnancy' },
+    { key: 'gestational_diabetes_current', label: 'Gestational diabetes' },
+    { key: 'mild_swelling', label: 'Mild swelling of hands/face' },
 ];
 
 /**

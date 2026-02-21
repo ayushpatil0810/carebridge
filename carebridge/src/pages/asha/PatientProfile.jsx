@@ -9,10 +9,12 @@ import { getVisitsByPatient } from '../../services/visitService';
 import { getActiveMaternityRecord, getGestationalAge, daysUntilEDD } from '../../services/maternityService';
 import { getVaccinations, getVaccineStatus, getDaysOverdue } from '../../services/vaccinationService';
 import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PatientProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [patient, setPatient] = useState(null);
     const [visits, setVisits] = useState([]);
     const [maternityRec, setMaternityRec] = useState(null);
@@ -73,7 +75,7 @@ export default function PatientProfile() {
             <div className="loading-spinner">
                 <div>
                     <div className="spinner"></div>
-                    <div className="loading-text">Loading patient profile...</div>
+                    <div className="loading-text">{t('patientProfile.loadingProfile')}</div>
                 </div>
             </div>
         );
@@ -84,9 +86,9 @@ export default function PatientProfile() {
             <div className="card">
                 <div className="empty-state">
                     <div className="empty-icon"><XCircle size={48} strokeWidth={1} /></div>
-                    <p>Patient not found</p>
+                    <p>{t('patientProfile.patientNotFound')}</p>
                     <button className="btn btn-secondary" onClick={() => navigate('/search')} style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <ArrowLeft size={16} /> Back to Search
+                        <ArrowLeft size={16} /> {t('patientProfile.backToSearch')}
                     </button>
                 </div>
             </div>
@@ -108,16 +110,16 @@ export default function PatientProfile() {
                                 {/* ABHA Linked Badge */}
                                 {patient.abhaLinked || patient.abhaId ? (
                                     <span className="badge badge-green" style={{ fontSize: '0.6rem', marginLeft: '8px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                        <ShieldCheck size={10} /> ABHA Linked
+                                        <ShieldCheck size={10} /> {t('patient.abhaLinked')}
                                     </span>
                                 ) : (
                                     <span className="badge" style={{ fontSize: '0.6rem', marginLeft: '8px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(100,100,100,0.08)', color: 'var(--text-muted)' }}>
-                                        <ShieldOff size={10} /> ABHA Not Linked
+                                        <ShieldOff size={10} /> {t('patient.abhaNotLinked')}
                                     </span>
                                 )}
                             </h2>
                             <div className="text-muted">
-                                {patient.patientId} • Registered {formatTime(patient.createdAt)}
+                                {patient.patientId} • {t('patientProfile.registered')} {formatTime(patient.createdAt)}
                             </div>
                         </div>
                     </div>
@@ -125,11 +127,11 @@ export default function PatientProfile() {
                         {patient.gender === 'Female' && (
                             <button className="btn btn-secondary" onClick={() => navigate('/maternity')}
                                 style={{ borderColor: 'var(--accent-saffron)', color: 'var(--accent-saffron)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Baby size={16} /> Maternity
+                                <Baby size={16} /> {t('patientProfile.maternity')}
                             </button>
                         )}
                         <button className="btn btn-primary" onClick={() => navigate(`/patient/${id}/visit`)}>
-                            <Plus size={16} /> New Visit
+                            <Plus size={16} /> {t('patientProfile.newVisit')}
                         </button>
                     </div>
                 </div>
@@ -138,30 +140,30 @@ export default function PatientProfile() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                     <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>Age / Gender</div>
-                        <div style={{ fontWeight: 500 }}>{patient.age} yrs • {patient.gender}</div>
+                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.ageGender')}</div>
+                        <div style={{ fontWeight: 500 }}>{patient.age} {t('patientProfile.yrs')} • {patient.gender}</div>
                     </div>
                     <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>Village (गाव)</div>
+                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.village')}</div>
                         <div style={{ fontWeight: 500 }}>{patient.village}</div>
                     </div>
                     <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>House No. (घर क्र.)</div>
+                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.houseNo')}</div>
                         <div style={{ fontWeight: 500 }}>{patient.houseNumber}</div>
                     </div>
                     <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>Family ID</div>
+                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.familyId')}</div>
                         <div style={{ fontWeight: 500 }}>{patient.familyId}</div>
                     </div>
                     {patient.abhaId && (
                         <div>
-                            <div className="text-muted" style={{ marginBottom: '2px' }}>ABHA ID</div>
+                            <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.abhaId')}</div>
                             <div style={{ fontWeight: 500 }}>{patient.abhaId}</div>
                         </div>
                     )}
                     {patient.contact && (
                         <div>
-                            <div className="text-muted" style={{ marginBottom: '2px' }}>Contact (संपर्क)</div>
+                            <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.contact')}</div>
                             <div style={{ fontWeight: 500 }}>{patient.contact}</div>
                         </div>
                     )}
@@ -173,7 +175,7 @@ export default function PatientProfile() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {maternityRec.status === 'antenatal' ? <Heart size={16} color="var(--alert-red)" /> : <Baby size={16} color="var(--accent-saffron)" />}
                             <span style={{ fontWeight: 600 }}>
-                                {maternityRec.status === 'antenatal' ? 'Pregnant (ANC)' : 'Post-Natal (PNC)'}
+                                {maternityRec.status === 'antenatal' ? t('patientProfile.pregnantANC') : t('patientProfile.postNatalPNC')}
                             </span>
                         </div>
                         {maternityRec.status === 'antenatal' && maternityRec.lmpDate && (() => {
@@ -183,7 +185,7 @@ export default function PatientProfile() {
                             const days = daysUntilEDD(edd);
                             return (
                                 <span className="text-muted" style={{ fontSize: '0.78rem' }}>
-                                    {ga.weeks}w {ga.days}d • {days > 0 ? `${days} days to EDD` : 'EDD passed'}
+                                    {ga.weeks}w {ga.days}d • {days > 0 ? t('patientProfile.daysToEDD', { days }) : t('patientProfile.eddPassed')}
                                 </span>
                             );
                         })()}
@@ -200,12 +202,11 @@ export default function PatientProfile() {
                     <div className="card" style={{ marginBottom: '1.5rem' }}>
                         <div className="card-header">
                             <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Syringe size={18} /> Vaccinations
-                                <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(लसीकरण)</span>
+                                <Syringe size={18} /> {t('maternity.vaccinationOverview')}
                             </h3>
                             <button className="btn btn-secondary" style={{ fontSize: '0.75rem' }}
                                 onClick={() => navigate('/vaccinations')}>
-                                View All <ChevronRight size={14} />
+                                {t('dashboard.viewAll')} <ChevronRight size={14} />
                             </button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -252,8 +253,7 @@ export default function PatientProfile() {
                     <div className="card" style={{ marginBottom: '1.5rem' }}>
                         <div className="card-header">
                             <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <FileText size={18} /> Digital Health Record
-                                <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(डिजिटल आरोग्य नोंद)</span>
+                                <FileText size={18} /> {t('dhr.title')}
                             </h3>
                             <span className="badge badge-green" style={{ fontSize: '0.6rem' }}>ABHA: {patient.abhaId}</span>
                         </div>
@@ -265,7 +265,7 @@ export default function PatientProfile() {
                                 </div>
                                 <div>
                                     <div className="dhr-stat-value">{totalVisits}</div>
-                                    <div className="dhr-stat-label">Past Visits</div>
+                                    <div className="dhr-stat-label">{t('dhr.pastVisits')}</div>
                                 </div>
                             </div>
                             {/* Escalation History */}
@@ -275,7 +275,7 @@ export default function PatientProfile() {
                                 </div>
                                 <div>
                                     <div className="dhr-stat-value">{escalations.length}</div>
-                                    <div className="dhr-stat-label">Escalations</div>
+                                    <div className="dhr-stat-label">{t('dhr.escalations')}</div>
                                     {(redEsc > 0 || yellowEsc > 0) && (
                                         <div style={{ display: 'flex', gap: '0.2rem', marginTop: '2px' }}>
                                             {redEsc > 0 && <span className="badge badge-red" style={{ fontSize: '0.55rem' }}>{redEsc} Red</span>}
@@ -291,7 +291,7 @@ export default function PatientProfile() {
                                 </div>
                                 <div>
                                     <div className="dhr-stat-value">{reviewed}</div>
-                                    <div className="dhr-stat-label">PHC Reviewed</div>
+                                    <div className="dhr-stat-label">{t('dhr.phcReviewed')}</div>
                                     {pending > 0 && <span className="badge badge-yellow" style={{ fontSize: '0.55rem', marginTop: '2px' }}>{pending} pending</span>}
                                 </div>
                             </div>
@@ -302,7 +302,7 @@ export default function PatientProfile() {
                                 </div>
                                 <div>
                                     <div className="dhr-stat-value" style={{ fontSize: '0.85rem', color: monitorColor }}>{monitoringStatus}</div>
-                                    <div className="dhr-stat-label">Current Status</div>
+                                    <div className="dhr-stat-label">{t('dhr.currentStatus')}</div>
                                 </div>
                             </div>
                         </div>
@@ -314,17 +314,17 @@ export default function PatientProfile() {
             <div className="card">
                 <div className="card-header">
                     <h3 className="card-title">
-                        Visit History <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(भेट इतिहास)</span>
+                        {t('visit.visitHistory')}
                     </h3>
-                    <span className="badge badge-indigo">{visits.length} visits</span>
+                    <span className="badge badge-indigo">{visits.length} {t('visit.visits')}</span>
                 </div>
 
                 {visits.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
-                        <p>No visits recorded yet</p>
+                        <p>{t('patientProfile.noVisitsYet')}</p>
                         <button className="btn btn-primary" onClick={() => navigate(`/patient/${id}/visit`)} style={{ marginTop: '1rem' }}>
-                            <Plus size={16} /> Create First Visit
+                            <Plus size={16} /> {t('patientProfile.createFirstVisit')}
                         </button>
                     </div>
                 ) : (
@@ -340,11 +340,11 @@ export default function PatientProfile() {
                                         <div className={`visit-risk-dot ${getRiskClass(visit.riskLevel)}`}></div>
                                         <div>
                                             <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                                                {visit.chiefComplaint || 'No complaint recorded'}
+                                                {visit.chiefComplaint || t('dashboard.noComplaintRecorded')}
                                             </div>
                                             <div className="text-muted" style={{ marginTop: '4px' }}>
                                                 {formatTime(visit.createdAt)}
-                                                {visit.symptomDuration && ` • Duration: ${visit.symptomDuration} days`}
+                                                {visit.symptomDuration && ` • ${t('patientProfile.duration')} ${visit.symptomDuration} ${t('patientProfile.days')}`}
                                             </div>
                                         </div>
                                     </div>
@@ -410,7 +410,7 @@ export default function PatientProfile() {
                                         gap: '6px',
                                     }}>
                                         <MessageSquare size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                                        <span><strong>Doctor Note:</strong> {visit.doctorNote}</span>
+                                        <span><strong>{t('patientProfile.doctorNote')}</strong> {visit.doctorNote}</span>
                                     </div>
                                 )}
                             </div>

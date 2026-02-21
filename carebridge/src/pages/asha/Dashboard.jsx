@@ -18,6 +18,7 @@ import {
     ArrowRight,
     Syringe,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
     const [visits, setVisits] = useState([]);
@@ -25,6 +26,7 @@ export default function Dashboard() {
     const [dueVaccines, setDueVaccines] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadData();
@@ -83,7 +85,7 @@ export default function Dashboard() {
             <div className="loading-spinner">
                 <div>
                     <div className="spinner"></div>
-                    <div className="loading-text">Loading dashboard...</div>
+                    <div className="loading-text">{t('dashboard.loadingDashboard')}</div>
                 </div>
             </div>
         );
@@ -103,7 +105,7 @@ export default function Dashboard() {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem', fontWeight: 600, color: '#9A7B12' }}>
                         <MessageCircleQuestion size={18} />
-                        {clarifications.length} Doctor Clarification{clarifications.length > 1 ? 's' : ''} Required
+                        {t('dashboard.doctorClarificationsRequired', { count: clarifications.length })}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {clarifications.map(c => (
@@ -116,10 +118,10 @@ export default function Dashboard() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                                            {c.patientName || 'Unknown Patient'}
+                                            {c.patientName || t('dashboard.unknownPatient')}
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '2px' }}>
-                                            Doctor asks: "{c.clarificationMessage?.substring(0, 80) || '...'}"
+                                            {t('dashboard.doctorAsks')} "{c.clarificationMessage?.substring(0, 80) || '...'}"
                                         </div>
                                     </div>
                                     <ArrowRight size={16} color="#9A7B12" />
@@ -136,7 +138,7 @@ export default function Dashboard() {
                     <div className="stat-card-icon saffron"><ClipboardList size={24} /></div>
                     <div>
                         <div className="stat-card-value">{todayVisits.length}</div>
-                        <div className="stat-card-label">Cases Today</div>
+                        <div className="stat-card-label">{t('dashboard.casesToday')}</div>
                     </div>
                 </div>
 
@@ -144,7 +146,7 @@ export default function Dashboard() {
                     <div className="stat-card-icon red"><AlertCircle size={24} /></div>
                     <div>
                         <div className="stat-card-value">{highRiskCount}</div>
-                        <div className="stat-card-label">High NEWS2 Cases</div>
+                        <div className="stat-card-label">{t('dashboard.highNEWS2Cases')}</div>
                     </div>
                 </div>
 
@@ -152,7 +154,7 @@ export default function Dashboard() {
                     <div className="stat-card-icon indigo"><Clock size={24} /></div>
                     <div>
                         <div className="stat-card-value">{pendingReviews}</div>
-                        <div className="stat-card-label">Pending PHC Reviews</div>
+                        <div className="stat-card-label">{t('dashboard.pendingPHCReviews')}</div>
                     </div>
                 </div>
 
@@ -160,7 +162,7 @@ export default function Dashboard() {
                     <div className="stat-card-icon green"><CheckCircle2 size={24} /></div>
                     <div>
                         <div className="stat-card-value">{approvedReferrals}</div>
-                        <div className="stat-card-label">Referrals Approved</div>
+                        <div className="stat-card-label">{t('dashboard.referralsApproved')}</div>
                     </div>
                 </div>
             </div>
@@ -168,10 +170,10 @@ export default function Dashboard() {
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                 <button className="btn btn-primary" onClick={() => navigate('/register')}>
-                    <UserPlus size={16} /> Register Patient
+                    <UserPlus size={16} /> {t('dashboard.registerPatient')}
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate('/search')}>
-                    <Search size={16} /> Search Patients
+                    <Search size={16} /> {t('dashboard.searchPatients')}
                 </button>
             </div>
 
@@ -180,11 +182,10 @@ export default function Dashboard() {
                 <div className="card" style={{ marginBottom: '1.5rem' }}>
                     <div className="card-header">
                         <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Syringe size={18} /> Vaccinations Due
-                            <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(लसीकरण बाकी)</span>
+                            <Syringe size={18} /> {t('vaccination.due')}
                         </h2>
                         <button className="btn btn-secondary" style={{ fontSize: '0.78rem' }} onClick={() => navigate('/vaccinations')}>
-                            View All <ArrowRight size={14} />
+                            {t('dashboard.viewAll')} <ArrowRight size={14} />
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -206,14 +207,14 @@ export default function Dashboard() {
                                     </div>
                                     <span className={`badge ${vax.computedStatus === 'overdue' ? 'badge-red' : 'badge-yellow'}`}
                                         style={{ fontSize: '0.68rem' }}>
-                                        {vax.daysOverdue > 0 ? `${vax.daysOverdue}d overdue` : 'Due today'}
+                                        {vax.daysOverdue > 0 ? t('dashboard.dOverdue', { days: vax.daysOverdue }) : t('dashboard.dueToday')}
                                     </span>
                                 </div>
                             </div>
                         ))}
                         {dueVaccines.length > 8 && (
                             <div className="text-muted" style={{ fontSize: '0.75rem', textAlign: 'center', padding: '0.3rem' }}>
-                                + {dueVaccines.length - 8} more...
+                                {t('dashboard.more', { count: dueVaccines.length - 8 })}
                             </div>
                         )}
                     </div>
@@ -223,13 +224,13 @@ export default function Dashboard() {
             {/* Recent Visits */}
             <div className="card">
                 <div className="card-header">
-                    <h2 className="card-title">Recent Visits <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(अलीकडील भेटी)</span></h2>
+                    <h2 className="card-title">{t('visit.recentVisits')}</h2>
                 </div>
 
                 {visits.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
-                        <p>No visits recorded yet. Register a patient and create their first visit.</p>
+                        <p>{t('dashboard.noVisitsYet')}</p>
                     </div>
                 ) : (
                     <div className="cards-grid stagger-children">
@@ -245,10 +246,10 @@ export default function Dashboard() {
                                         <div className={`visit-risk-dot ${getRiskClass(visit.riskLevel)}`}></div>
                                         <div>
                                             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                                                {visit.patientName || 'Unknown Patient'}
+                                                {visit.patientName || t('dashboard.unknownPatient')}
                                             </div>
                                             <div className="text-muted" style={{ marginTop: '2px' }}>
-                                                {visit.chiefComplaint ? visit.chiefComplaint.substring(0, 60) + (visit.chiefComplaint.length > 60 ? '...' : '') : 'No complaint recorded'}
+                                                {visit.chiefComplaint ? visit.chiefComplaint.substring(0, 60) + (visit.chiefComplaint.length > 60 ? '...' : '') : t('dashboard.noComplaintRecorded')}
                                                 {' • '}
                                                 {formatTime(visit.createdAt)}
                                             </div>

@@ -32,6 +32,7 @@ import {
     AlertTriangle,
     Filter,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PHCMaternityPanel() {
     const [records, setRecords] = useState([]);
@@ -43,6 +44,7 @@ export default function PHCMaternityPanel() {
     const [filterStatus, setFilterStatus] = useState('active'); // active | all
     const [sortBy, setSortBy] = useState('risk'); // risk | edd | name
     const [expandedId, setExpandedId] = useState(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadData();
@@ -200,10 +202,7 @@ export default function PHCMaternityPanel() {
             <div className="card" style={{ marginBottom: '1.25rem' }}>
                 <div className="card-header">
                     <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Baby size={22} /> Maternal Health Overview
-                        <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>
-                            (माता आरोग्य विहंगावलोकन)
-                        </span>
+                        <Baby size={22} /> {t('maternity.maternalHealthOverview')}
                     </h2>
                 </div>
                 <p className="text-muted" style={{ fontSize: '0.82rem' }}>
@@ -225,7 +224,7 @@ export default function PHCMaternityPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{stats.antenatal}</div>
-                        <div className="phc-mat-stat-label">Antenatal <span className="text-marathi">प्रसवपूर्व</span></div>
+                        <div className="phc-mat-stat-label">{t('maternity.antenatal')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -234,7 +233,7 @@ export default function PHCMaternityPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{stats.highRisk}</div>
-                        <div className="phc-mat-stat-label">High Risk <span className="text-marathi">उच्च जोखीम</span></div>
+                        <div className="phc-mat-stat-label">{t('maternity.highRisk')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -243,7 +242,7 @@ export default function PHCMaternityPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{stats.postnatal}</div>
-                        <div className="phc-mat-stat-label">Postnatal <span className="text-marathi">प्रसवोत्तर</span></div>
+                        <div className="phc-mat-stat-label">{t('maternity.postnatal')}</div>
                     </div>
                 </div>
                 <div className="phc-mat-stat-card">
@@ -252,7 +251,7 @@ export default function PHCMaternityPanel() {
                     </div>
                     <div>
                         <div className="phc-mat-stat-value">{stats.overdueAnc}</div>
-                        <div className="phc-mat-stat-label">ANC Overdue <span className="text-marathi">विलंबित</span></div>
+                        <div className="phc-mat-stat-label">{t('maternity.ancOverdue')}</div>
                     </div>
                 </div>
             </div>

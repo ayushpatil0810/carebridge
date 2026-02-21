@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { HEALTH_TEMPLATES, logMessage, getWhatsAppLink } from '../../services/messageService';
 import {
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function MessageTemplates() {
+    const { t } = useTranslation();
     const { user, userName } = useAuth();
     const [search, setSearch] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -24,9 +26,9 @@ export default function MessageTemplates() {
     const [sending, setSending] = useState(false);
     const [sentId, setSentId] = useState(null);
 
-    const filtered = HEALTH_TEMPLATES.filter(t =>
-        t.title.toLowerCase().includes(search.toLowerCase()) ||
-        t.category.toLowerCase().includes(search.toLowerCase())
+    const filtered = HEALTH_TEMPLATES.filter(tpl =>
+        tpl.title.toLowerCase().includes(search.toLowerCase()) ||
+        tpl.category.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleSend = async () => {
@@ -65,17 +67,17 @@ export default function MessageTemplates() {
             {/* Header */}
             <div className="card" style={{ marginBottom: '1rem' }}>
                 <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                    <BookOpen size={18} /> Health Message Templates
+                    <BookOpen size={18} /> {t('messageTemplates.title')}
                 </h3>
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-                    Reusable health awareness and reminder templates. Select a template, enter the recipient's number, and send via WhatsApp.
+                    {t('messageTemplates.description')}
                 </p>
                 <div style={{ position: 'relative' }}>
                     <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
                         type="text"
                         className="form-input"
-                        placeholder="Search templates…"
+                        placeholder={t('messageTemplates.searchPlaceholder')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         style={{ paddingLeft: '36px' }}
@@ -85,21 +87,21 @@ export default function MessageTemplates() {
 
             {/* Template Grid */}
             <div className="template-grid stagger-children">
-                {filtered.map(t => (
+                {filtered.map(tpl => (
                     <div
-                        key={t.id}
-                        className={`template-card ${selectedTemplate?.id === t.id ? 'selected' : ''}`}
-                        onClick={() => { setSelectedTemplate(t); setUseMarathi(false); }}
+                        key={tpl.id}
+                        className={`template-card ${selectedTemplate?.id === tpl.id ? 'selected' : ''}`}
+                        onClick={() => { setSelectedTemplate(tpl); setUseMarathi(false); }}
                     >
                         <div className="template-card-header">
-                            <span className="template-icon">{t.icon}</span>
+                            <span className="template-icon">{tpl.icon}</span>
                             <div>
-                                <div className="template-title">{t.title}</div>
-                                <div className="template-category">{t.category}</div>
+                                <div className="template-title">{tpl.title}</div>
+                                <div className="template-category">{tpl.category}</div>
                             </div>
                         </div>
-                        <p className="template-preview">{t.message.length > 80 ? t.message.slice(0, 80) + '…' : t.message}</p>
-                        {selectedTemplate?.id === t.id && <div className="template-selected-badge"><Check size={14} /> Selected</div>}
+                        <p className="template-preview">{tpl.message.length > 80 ? tpl.message.slice(0, 80) + '…' : tpl.message}</p>
+                        {selectedTemplate?.id === tpl.id && <div className="template-selected-badge"><Check size={14} /> {t('messageTemplates.selected')}</div>}
                     </div>
                 ))}
             </div>
@@ -113,8 +115,8 @@ export default function MessageTemplates() {
 
                     {selectedTemplate.messageMarathi && (
                         <div className="msg-lang-toggle" style={{ marginBottom: '0.75rem' }}>
-                            <button className={`btn btn-sm ${!useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(false)}>English</button>
-                            <button className={`btn btn-sm ${useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(true)}>मराठी</button>
+                            <button className={`btn btn-sm ${!useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(false)}>{t('messageTemplates.english')}</button>
+                            <button className={`btn btn-sm ${useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(true)}>{t('messageTemplates.marathi')}</button>
                         </div>
                     )}
 
@@ -126,7 +128,7 @@ export default function MessageTemplates() {
                         <input
                             type="text"
                             className="form-input"
-                            placeholder="Patient name (optional)"
+                            placeholder={t('messageTemplates.patientNameOptional')}
                             value={patientName}
                             onChange={e => setPatientName(e.target.value)}
                             style={{ flex: '1 1 140px' }}
@@ -134,7 +136,7 @@ export default function MessageTemplates() {
                         <input
                             type="tel"
                             className="form-input"
-                            placeholder="Phone number *"
+                            placeholder={t('messageTemplates.phoneNumber')}
                             value={phone}
                             onChange={e => setPhone(e.target.value)}
                             style={{ flex: '1 1 140px' }}
@@ -142,16 +144,16 @@ export default function MessageTemplates() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setSelectedTemplate(null)}>Cancel</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setSelectedTemplate(null)}>{t('common.cancel')}</button>
                         <button
                             className="btn btn-success btn-sm"
                             onClick={handleSend}
                             disabled={!phone || sending}
                         >
                             {sentId === selectedTemplate.id ? (
-                                <><Check size={14} /> Sent!</>
+                                <><Check size={14} /> {t('messageTemplates.sent')}</>
                             ) : (
-                                <><Send size={14} /> {sending ? 'Sending…' : 'Send via WhatsApp'} <ExternalLink size={12} /></>
+                                <><Send size={14} /> {sending ? t('messageTemplates.sending') : t('messageTemplates.sendViaWhatsApp')} <ExternalLink size={12} /></>
                             )}
                         </button>
                     </div>

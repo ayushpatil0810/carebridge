@@ -124,11 +124,11 @@ function scoreConsciousness(level) {
  */
 export function calculateNEWS2(vitals, consciousness, redFlags = []) {
     const parameters = [
-        { name: 'Respiratory Rate', key: 'respiratoryRate', fn: scoreRespiratoryRate, marathiName: 'श्वसन दर' },
-        { name: 'SpO2', key: 'spo2', fn: scoreSpO2, marathiName: 'ऑक्सिजन' },
-        { name: 'Temperature', key: 'temperature', fn: scoreTemperature, marathiName: 'तापमान' },
-        { name: 'Systolic BP', key: 'systolicBP', fn: scoreSystolicBP, marathiName: 'रक्तदाब' },
-        { name: 'Pulse Rate', key: 'pulseRate', fn: scorePulseRate, marathiName: 'नाडी दर' },
+        { name: 'Respiratory Rate', key: 'respiratoryRate', fn: scoreRespiratoryRate },
+        { name: 'SpO2', key: 'spo2', fn: scoreSpO2 },
+        { name: 'Temperature', key: 'temperature', fn: scoreTemperature },
+        { name: 'Systolic BP', key: 'systolicBP', fn: scoreSystolicBP },
+        { name: 'Pulse Rate', key: 'pulseRate', fn: scorePulseRate },
     ];
 
     const breakdown = [];
@@ -142,7 +142,6 @@ export function calculateNEWS2(vitals, consciousness, redFlags = []) {
         if (result) {
             breakdown.push({
                 name: param.name,
-                marathiName: param.marathiName,
                 value: result.detail,
                 score: result.score,
             });
@@ -158,7 +157,6 @@ export function calculateNEWS2(vitals, consciousness, redFlags = []) {
     if (consciousnessResult) {
         breakdown.push({
             name: 'Consciousness',
-            marathiName: 'चेतना',
             value: consciousnessResult.detail,
             score: consciousnessResult.score,
         });
@@ -204,7 +202,6 @@ export function getRiskAdvisory(riskLevel) {
         case 'Green':
             return {
                 level: 'Low Risk',
-                levelMarathi: 'कमी धोका',
                 color: 'green',
                 items: [
                     { icon: '💧', text: 'Ensure adequate hydration' },
@@ -216,7 +213,6 @@ export function getRiskAdvisory(riskLevel) {
         case 'Yellow':
             return {
                 level: 'Moderate Risk',
-                levelMarathi: 'मध्यम धोका',
                 color: 'yellow',
                 items: [
                     { icon: '🔄', text: 'Recheck vitals within 1 hour' },
@@ -228,7 +224,6 @@ export function getRiskAdvisory(riskLevel) {
         case 'Red':
             return {
                 level: 'High Risk',
-                levelMarathi: 'उच्च धोका',
                 color: 'red',
                 items: [
                     { icon: '🚨', text: 'Immediate referral to PHC/higher center' },
