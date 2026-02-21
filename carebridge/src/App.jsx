@@ -13,10 +13,13 @@ import PatientProfile from './pages/asha/PatientProfile';
 import VisitEntry from './pages/asha/VisitEntry';
 import PHCDashboard from './pages/phc/PHCDashboard';
 import CaseReview from './pages/phc/CaseReview';
+import PHCMaternityPanel from './pages/phc/PHCMaternityPanel';
 import ClarificationResponse from './pages/asha/ClarificationResponse';
 import MessageTemplates from './pages/asha/MessageTemplates';
 import MessageLog from './pages/asha/MessageLog';
 import FollowUps from './pages/asha/FollowUps';
+import MaternityTracker from './pages/asha/MaternityTracker';
+import VaccinationTracker from './pages/asha/VaccinationTracker';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminNotices from './pages/admin/AdminNotices';
 import AdminPerformance from './pages/admin/AdminPerformance';
@@ -89,10 +92,13 @@ function AppRoutes() {
         <Route path="templates" element={<MessageTemplates />} />
         <Route path="message-log" element={<MessageLog />} />
         <Route path="follow-ups" element={<FollowUps />} />
+        <Route path="maternity" element={<MaternityTracker />} />
+        <Route path="vaccinations" element={<VaccinationTracker />} />
 
         {/* PHC routes */}
         <Route path="phc" element={<PHCDashboard />} />
         <Route path="phc/review/:visitId" element={<CaseReview />} />
+        <Route path="phc/maternity" element={<PHCMaternityPanel />} />
 
         {/* Admin routes */}
         <Route path="admin" element={<AdminDashboard />} />

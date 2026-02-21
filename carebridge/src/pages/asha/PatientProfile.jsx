@@ -6,13 +6,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPatientById } from '../../services/patientService';
 import { getVisitsByPatient } from '../../services/visitService';
-import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft } from 'lucide-react';
+import { getActiveMaternityRecord, getGestationalAge, daysUntilEDD } from '../../services/maternityService';
+import { getVaccinations, getVaccineStatus, getDaysOverdue } from '../../services/vaccinationService';
+import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight } from 'lucide-react';
 
 export default function PatientProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [patient, setPatient] = useState(null);
     const [visits, setVisits] = useState([]);
+    const [maternityRec, setMaternityRec] = useState(null);
+    const [vaccinations, setVaccinations] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,6 +31,18 @@ export default function PatientProfile() {
             ]);
             setPatient(p);
             setVisits(v);
+            // Load maternity record for female patients
+            if (p && p.gender === 'Female') {
+                try {
+                    const mr = await getActiveMaternityRecord(id);
+                    setMaternityRec(mr);
+                } catch (e) { /* no maternity record */ }
+            }
+            // Load vaccination records
+            try {
+                const vaxList = await getVaccinations(id);
+                setVaccinations(vaxList);
+            } catch (e) { /* no vaccinations */ }
         } catch (err) {
             console.error('Error loading patient:', err);
         } finally {
@@ -93,9 +109,17 @@ export default function PatientProfile() {
                             </div>
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={() => navigate(`/patient/${id}/visit`)}>
-                        <Plus size={16} /> New Visit
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {patient.gender === 'Female' && (
+                            <button className="btn btn-secondary" onClick={() => navigate('/maternity')}
+                                style={{ borderColor: 'var(--accent-saffron)', color: 'var(--accent-saffron)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Baby size={16} /> Maternity
+                            </button>
+                        )}
+                        <button className="btn btn-primary" onClick={() => navigate(`/patient/${id}/visit`)}>
+                            <Plus size={16} /> New Visit
+                        </button>
+                    </div>
                 </div>
 
                 <div className="warli-divider" style={{ margin: '1rem 0' }}></div>
@@ -130,7 +154,69 @@ export default function PatientProfile() {
                         </div>
                     )}
                 </div>
+
+                {/* Maternity Badge */}
+                {maternityRec && (
+                    <div className="maternity-profile-badge" onClick={() => navigate('/maternity')} style={{ cursor: 'pointer', marginTop: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {maternityRec.status === 'antenatal' ? <Heart size={16} color="var(--alert-red)" /> : <Baby size={16} color="var(--accent-saffron)" />}
+                            <span style={{ fontWeight: 600 }}>
+                                {maternityRec.status === 'antenatal' ? 'Pregnant (ANC)' : 'Post-Natal (PNC)'}
+                            </span>
+                        </div>
+                        {maternityRec.status === 'antenatal' && maternityRec.lmpDate && (() => {
+                            const lmp = maternityRec.lmpDate?.toDate?.() ? maternityRec.lmpDate.toDate() : new Date(maternityRec.lmpDate);
+                            const ga = getGestationalAge(lmp);
+                            const edd = maternityRec.eddDate?.toDate?.() ? maternityRec.eddDate.toDate() : new Date(maternityRec.eddDate);
+                            const days = daysUntilEDD(edd);
+                            return (
+                                <span className="text-muted" style={{ fontSize: '0.78rem' }}>
+                                    {ga.weeks}w {ga.days}d • {days > 0 ? `${days} days to EDD` : 'EDD passed'}
+                                </span>
+                            );
+                        })()}
+                    </div>
+                )}
             </div>
+
+            {/* Vaccination Overview */}
+            {vaccinations.length > 0 && (() => {
+                const pendingVax = vaccinations
+                    .map(v => ({ ...v, computedStatus: getVaccineStatus(v.scheduledDate, v.givenDate) }))
+                    .filter(v => v.computedStatus !== 'completed' && v.computedStatus !== 'upcoming');
+                return pendingVax.length > 0 ? (
+                    <div className="card" style={{ marginBottom: '1.5rem' }}>
+                        <div className="card-header">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Syringe size={18} /> Vaccinations
+                                <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(लसीकरण)</span>
+                            </h3>
+                            <button className="btn btn-secondary" style={{ fontSize: '0.75rem' }}
+                                onClick={() => navigate('/vaccinations')}>
+                                View All <ChevronRight size={14} />
+                            </button>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                            {pendingVax.slice(0, 6).map(vax => {
+                                const isOverdue = vax.computedStatus === 'overdue';
+                                const days = getDaysOverdue(vax.scheduledDate);
+                                return (
+                                    <span key={vax.id} className={`badge ${isOverdue ? 'badge-red' : 'badge-yellow'}`}
+                                        style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                        💉 {vax.vaccineName} D{vax.doseNumber}
+                                        {isOverdue ? ` (${days}d overdue)` : ' (due)'}
+                                    </span>
+                                );
+                            })}
+                            {pendingVax.length > 6 && (
+                                <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(100,100,100,0.06)' }}>
+                                    +{pendingVax.length - 6} more
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ) : null;
+            })()}
 
             {/* Visit History */}
             <div className="card">
@@ -177,8 +263,8 @@ export default function PatientProfile() {
                                             </span>
                                         )}
                                         <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
-                                                visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
-                                                    visit.emergencyFlag ? 'emergency' : ''
+                                            visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
+                                                visit.emergencyFlag ? 'emergency' : ''
                                             }`}>
                                             {visit.status}
                                         </span>

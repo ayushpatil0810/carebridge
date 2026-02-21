@@ -23,6 +23,9 @@ import {
     FileText,
     CalendarCheck,
     BookOpen,
+    Baby,
+    Stethoscope,
+    Syringe,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -54,6 +57,9 @@ export default function Layout() {
         if (path === '/templates') return { en: 'Message Templates', mr: 'संदेश नमुने' };
         if (path === '/message-log') return { en: 'Message Log', mr: 'संदेश नोंद' };
         if (path === '/follow-ups') return { en: 'Follow-Ups', mr: 'पाठपुरावा' };
+        if (path === '/maternity') return { en: 'Maternity Tracker', mr: 'माता सेवा' };
+        if (path === '/vaccinations') return { en: 'Vaccination Tracker', mr: 'लसीकरण व्यवस्थापक' };
+        if (path === '/phc/maternity') return { en: 'Maternal Overview', mr: 'माता आरोग्य विहंगावलोकन' };
         return { en: 'CareBridge', mr: 'केअरब्रिज' };
     };
 
@@ -105,6 +111,12 @@ export default function Layout() {
                                 <span className="nav-icon"><Search size={18} /></span>
                                 Search Patients
                             </NavLink>
+
+                            <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Maternal Care</div>
+                            <NavLink to="/phc/maternity" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Baby size={18} /></span>
+                                Maternal Overview
+                            </NavLink>
                         </>
                     ) : (
                         <>
@@ -120,6 +132,16 @@ export default function Layout() {
                             <NavLink to="/search" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
                                 <span className="nav-icon"><Search size={18} /></span>
                                 Search Patients
+                            </NavLink>
+
+                            <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Health Programs</div>
+                            <NavLink to="/maternity" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Baby size={18} /></span>
+                                Maternity Tracker
+                            </NavLink>
+                            <NavLink to="/vaccinations" className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}>
+                                <span className="nav-icon"><Syringe size={18} /></span>
+                                Vaccinations
                             </NavLink>
 
                             <div className="sidebar-nav-section" style={{ marginTop: '0.75rem' }}>Messaging</div>

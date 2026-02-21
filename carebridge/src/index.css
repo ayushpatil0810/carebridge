@@ -2596,3 +2596,990 @@ select.form-input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================
+   MATERNITY TRACKER STYLES
+   ================================================================ */
+
+/* ── Patient List (selection screen) ── */
+.maternity-patient-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.maternity-patient-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.maternity-patient-card:hover {
+  border-color: var(--accent-saffron);
+  background: rgba(255, 136, 0, 0.04);
+  transform: translateX(3px);
+}
+
+/* ── Status Banner ── */
+.maternity-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.maternity-status-banner.antenatal {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.maternity-status-banner.postnatal {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
+
+.maternity-status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.maternity-status-icon {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maternity-status-label {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.maternity-status-right {
+  display: flex;
+  align-items: center;
+}
+
+.maternity-edd-pill {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Risk Badges Row ── */
+.maternity-risk-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(220, 38, 38, 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+/* ── Risk Factor Selection Grid ── */
+.maternity-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.maternity-risk-btn {
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.maternity-risk-btn:hover {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.04);
+}
+
+.maternity-risk-btn.selected {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.08);
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.12);
+}
+
+/* ── Info Row ── */
+.maternity-info-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.maternity-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.maternity-info-item .text-muted {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ── Tab Switcher ── */
+.maternity-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 4px;
+  margin-bottom: 1rem;
+}
+
+.maternity-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.maternity-tab:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.maternity-tab.active {
+  background: var(--accent-saffron);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(255, 136, 0, 0.3);
+}
+
+.maternity-tab-count {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+}
+
+.maternity-tab.active .maternity-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── ANC/PNC Timeline ── */
+.anc-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 12px;
+}
+
+.anc-timeline::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.anc-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.anc-timeline-dot {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+  color: var(--text-muted);
+}
+
+.anc-timeline-step.completed .anc-timeline-dot {
+  color: var(--green);
+}
+
+.anc-dot-empty {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.anc-timeline-content {
+  flex: 1;
+  padding-bottom: 0.25rem;
+}
+
+/* ── Visit Cards ── */
+.maternity-visit-card {
+  padding: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  margin-bottom: 0.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.maternity-visit-card:hover {
+  border-color: var(--accent-saffron);
+}
+
+.maternity-visit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.maternity-visit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.4rem 1rem;
+  font-size: 0.82rem;
+}
+
+.maternity-visit-grid>div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.maternity-visit-grid>div>span:first-child {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.maternity-visit-grid>div>span:last-child {
+  font-weight: 600;
+}
+
+.maternity-visit-notes {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--border-color);
+}
+
+/* ── Profile Badge ── */
+.maternity-profile-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.06), rgba(230, 126, 34, 0.06));
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.maternity-profile-badge:hover {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(230, 126, 34, 0.1));
+  border-color: rgba(231, 76, 60, 0.35);
+}
+
+/* ── Checkbox Style ── */
+.maternity-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.4rem 0;
+}
+
+.maternity-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-saffron);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .maternity-risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .maternity-visit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .maternity-status-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .maternity-info-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .maternity-tabs {
+    flex-direction: column;
+  }
+}
+
+/* ================================================================
+   DANGER SIGN ASSESSMENT STYLES
+   ================================================================ */
+
+/* ── Section Header ── */
+.ds-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-bottom: 0.6rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1.5px solid var(--border-color);
+}
+
+/* ── Danger Sign Grid ── */
+.ds-danger-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ds-danger-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.ds-danger-btn:hover {
+  border-color: var(--alert-red);
+  background: rgba(220, 38, 38, 0.03);
+}
+
+.ds-danger-btn.selected {
+  border-color: var(--alert-red);
+  background: rgba(220, 38, 38, 0.08);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+}
+
+.ds-danger-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 26px;
+  text-align: center;
+}
+
+/* ── Moderate Risk Grid ── */
+.ds-moderate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ds-moderate-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ds-moderate-btn:hover {
+  border-color: var(--accent-saffron);
+  background: rgba(255, 136, 0, 0.03);
+}
+
+.ds-moderate-btn.selected {
+  border-color: var(--accent-saffron);
+  background: rgba(255, 136, 0, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.12);
+}
+
+.ds-moderate-check {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+/* ── Live Risk Result ── */
+.ds-risk-result {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid transparent;
+}
+
+.ds-risk-result.high {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.ds-risk-result.moderate {
+  background: rgba(255, 136, 0, 0.06);
+  border-color: rgba(255, 136, 0, 0.3);
+}
+
+.ds-risk-result.low {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ds-risk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0.35rem;
+}
+
+.ds-risk-badge {
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-risk-reasons {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-left: 0.75rem;
+  border-left: 2px solid currentColor;
+}
+
+.ds-risk-result.high .ds-risk-badge {
+  color: var(--alert-red);
+}
+
+.ds-risk-result.moderate .ds-risk-badge {
+  color: var(--accent-saffron);
+}
+
+.ds-risk-result.low .ds-risk-badge {
+  color: var(--green);
+}
+
+.ds-risk-result.high .ds-risk-reasons {
+  border-color: var(--alert-red);
+}
+
+.ds-risk-result.moderate .ds-risk-reasons {
+  border-color: var(--accent-saffron);
+}
+
+/* ── Badge Yellow ── */
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.12);
+  color: #D97706;
+}
+
+@media (max-width: 480px) {
+
+  .ds-danger-grid,
+  .ds-moderate-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── PHC Maternity Panel ── */
+
+.phc-mat-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.phc-mat-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.phc-mat-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.phc-mat-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.phc-mat-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.phc-mat-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.phc-mat-stat-label .text-marathi {
+  display: block;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+/* Filter bar */
+.phc-mat-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Alert section */
+.phc-mat-alert-section {
+  background: rgba(220, 38, 38, 0.04);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.phc-mat-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.phc-mat-alert-item {
+  background: var(--bg-card);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.phc-mat-alert-item:hover {
+  background: rgba(220, 38, 38, 0.03);
+}
+
+/* Patient table */
+.phc-mat-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.phc-mat-row {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.phc-mat-row:hover {
+  border-color: var(--accent-saffron);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.phc-mat-row.high-risk {
+  border-left: 3px solid var(--alert-red);
+}
+
+.phc-mat-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+}
+
+.phc-mat-row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.phc-mat-row-center {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.phc-mat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 45px;
+  font-size: 0.8rem;
+}
+
+.phc-mat-row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.phc-mat-risk-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Expanded detail */
+.phc-mat-detail {
+  border-top: 1px solid var(--border-light);
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.01);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phc-mat-detail-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+
+.phc-mat-detail-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.4rem;
+  color: var(--text-primary);
+}
+
+.phc-mat-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.35rem 1rem;
+  font-size: 0.78rem;
+}
+
+.phc-mat-detail-grid>div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.phc-mat-detail-grid .text-muted {
+  font-size: 0.7rem;
+}
+
+/* Visit row inside detail */
+.phc-mat-visit-row {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.phc-mat-visit-row:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.phc-mat-visit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .phc-mat-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .phc-mat-row-main {
+    flex-wrap: wrap;
+  }
+
+  .phc-mat-row-center {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .phc-mat-filters {
+    flex-direction: column;
+  }
+
+  .phc-mat-filters>* {
+    flex: 1 1 100% !important;
+  }
+
+  .phc-mat-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .phc-mat-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .phc-mat-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phc-mat-row-center {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ══════════════════════════════════════
+   Vaccination Tracker Styles
+   ══════════════════════════════════════ */
+
+/* Stat row */
+.vax-stat-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.vax-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* Filters */
+.vax-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.vax-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vax-filter-btn:hover {
+  border-color: var(--accent-saffron);
+  color: var(--accent-saffron);
+}
+
+.vax-filter-btn.active {
+  background: var(--accent-saffron);
+  color: #fff;
+  border-color: var(--accent-saffron);
+}
+
+/* Vaccine timeline */
+.vax-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vax-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.vax-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.vax-card-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.vax-card-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vax-card-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Modal overlay (reuse existing pattern) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.25s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive vaccination */
+@media (max-width: 640px) {
+  .vax-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vax-card-actions {
+    justify-content: flex-end;
+    margin-top: 0.3rem;
+  }
+
+  .vax-stat-row {
+    gap: 0.35rem;
+  }
+
+  .vax-stat-pill {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .vax-filters {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}

@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllVisits, getClarificationCases } from '../../services/visitService';
+import { getAllDueVaccinations } from '../../services/vaccinationService';
 import {
     ClipboardList,
     AlertCircle,
@@ -15,11 +16,13 @@ import {
     MessageSquare,
     MessageCircleQuestion,
     ArrowRight,
+    Syringe,
 } from 'lucide-react';
 
 export default function Dashboard() {
     const [visits, setVisits] = useState([]);
     const [clarifications, setClarifications] = useState([]);
+    const [dueVaccines, setDueVaccines] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -29,12 +32,14 @@ export default function Dashboard() {
 
     const loadData = async () => {
         try {
-            const [allVisits, clarCases] = await Promise.all([
+            const [allVisits, clarCases, dueVax] = await Promise.all([
                 getAllVisits(),
                 getClarificationCases(),
+                getAllDueVaccinations(),
             ]);
             setVisits(allVisits);
             setClarifications(clarCases);
+            setDueVaccines(dueVax);
         } catch (err) {
             console.error('Error loading dashboard:', err);
         } finally {
@@ -170,6 +175,51 @@ export default function Dashboard() {
                 </button>
             </div>
 
+            {/* Vaccinations Due Widget */}
+            {dueVaccines.length > 0 && (
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                    <div className="card-header">
+                        <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Syringe size={18} /> Vaccinations Due
+                            <span className="text-marathi text-muted" style={{ fontSize: '0.8rem' }}>(लसीकरण बाकी)</span>
+                        </h2>
+                        <button className="btn btn-secondary" style={{ fontSize: '0.78rem' }} onClick={() => navigate('/vaccinations')}>
+                            View All <ArrowRight size={14} />
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {dueVaccines.slice(0, 8).map(vax => (
+                            <div key={`${vax.patientDocId}-${vax.id}`}
+                                className="card card-clickable"
+                                onClick={() => navigate('/vaccinations')}
+                                style={{
+                                    padding: '0.6rem 0.75rem', margin: 0, boxShadow: 'none',
+                                    border: `1px solid ${vax.computedStatus === 'overdue' ? 'rgba(220,38,38,0.2)' : 'var(--border-light)'}`,
+                                    background: vax.computedStatus === 'overdue' ? 'rgba(220,38,38,0.03)' : 'var(--bg-card)',
+                                }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{vax.patientName}</div>
+                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                            💉 {vax.vaccineName} (Dose {vax.doseNumber})
+                                        </div>
+                                    </div>
+                                    <span className={`badge ${vax.computedStatus === 'overdue' ? 'badge-red' : 'badge-yellow'}`}
+                                        style={{ fontSize: '0.68rem' }}>
+                                        {vax.daysOverdue > 0 ? `${vax.daysOverdue}d overdue` : 'Due today'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {dueVaccines.length > 8 && (
+                            <div className="text-muted" style={{ fontSize: '0.75rem', textAlign: 'center', padding: '0.3rem' }}>
+                                + {dueVaccines.length - 8} more...
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Recent Visits */}
             <div className="card">
                 <div className="card-header">
@@ -211,10 +261,10 @@ export default function Dashboard() {
                                             </span>
                                         )}
                                         <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
-                                                visit.status === 'Awaiting ASHA Response' ? 'clarification' :
-                                                    visit.status === 'Under Monitoring' ? 'monitoring' :
-                                                        visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
-                                                            visit.emergencyFlag ? 'emergency' : ''
+                                            visit.status === 'Awaiting ASHA Response' ? 'clarification' :
+                                                visit.status === 'Under Monitoring' ? 'monitoring' :
+                                                    visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
+                                                        visit.emergencyFlag ? 'emergency' : ''
                                             }`}>
                                             {visit.status}
                                         </span>
