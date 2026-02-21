@@ -1,5 +1,6 @@
 // ============================================================
 // Admin Dashboard — Overview, Risk Map, NEWS2, Response, Villages
+// Enhanced with Chart.js visualizations
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,20 +16,83 @@ import {
 } from '../../services/adminService';
 import { formatDuration } from '../../services/visitService';
 import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    ArcElement,
+    PointElement,
+    LineElement,
+    Tooltip,
+    Legend,
+    Filler,
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import {
     LayoutDashboard,
     Activity,
     AlertCircle,
     Clock,
     CheckCircle2,
-    Eye,
     MapPin,
-    TrendingUp,
     Building2,
     ShieldAlert,
     Timer,
     Zap,
     AlertTriangle,
+    Eye,
 } from 'lucide-react';
+
+// Register Chart.js modules
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    ArcElement,
+    PointElement,
+    LineElement,
+    Tooltip,
+    Legend,
+    Filler
+);
+
+// Shared chart defaults
+const CHART_COLORS = {
+    saffron: '#FF8800',
+    saffronLight: 'rgba(255, 136, 0, 0.15)',
+    red: '#DC2626',
+    redLight: 'rgba(220, 38, 38, 0.15)',
+    green: '#22C55E',
+    greenLight: 'rgba(34, 197, 94, 0.15)',
+    indigo: '#6366F1',
+    indigoLight: 'rgba(99, 102, 241, 0.15)',
+    yellow: '#F59E0B',
+    yellowLight: 'rgba(245, 158, 11, 0.15)',
+    teal: '#14B8A6',
+    tealLight: 'rgba(20, 184, 166, 0.15)',
+};
+
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: {
+                font: { family: "'Inter', sans-serif", size: 11 },
+                usePointStyle: true,
+                padding: 16,
+            },
+        },
+        tooltip: {
+            backgroundColor: 'rgba(30, 30, 30, 0.92)',
+            titleFont: { family: "'Inter', sans-serif", size: 12, weight: 600 },
+            bodyFont: { family: "'Inter', sans-serif", size: 11 },
+            padding: 10,
+            cornerRadius: 8,
+            boxPadding: 4,
+        },
+    },
+};
 
 export default function AdminDashboard() {
     const [visits, setVisits] = useState([]);
@@ -58,6 +122,116 @@ export default function AdminDashboard() {
     const highNEWS2Village = useMemo(() => getHighNEWS2ByVillage(visits), [visits]);
     const responseTimes = useMemo(() => getPHCResponseTimes(visits), [visits]);
     const villageCaseLoad = useMemo(() => getVillageCaseLoad(visits), [visits]);
+
+    // ---- Chart Data Builders ----
+
+    // Case Status Distribution (Doughnut)
+    const statusDistribution = useMemo(() => {
+        const counts = {};
+        visits.forEach((v) => {
+            const s = v.status || 'Unknown';
+            counts[s] = (counts[s] || 0) + 1;
+        });
+        const labels = Object.keys(counts);
+        const data = Object.values(counts);
+        const colors = labels.map((l) => {
+            if (l.includes('Pending')) return CHART_COLORS.yellow;
+            if (l.includes('Approved') || l.includes('Referral')) return CHART_COLORS.green;
+            if (l.includes('Monitoring')) return CHART_COLORS.indigo;
+            if (l.includes('ASHA') || l.includes('Clarification')) return CHART_COLORS.saffron;
+            if (l.includes('Completed') || l.includes('Reviewed')) return CHART_COLORS.teal;
+            return '#94A3B8';
+        });
+        return { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] };
+    }, [visits]);
+
+    // PHC Case Load (Bar)
+    const phcBarData = useMemo(() => {
+        const top = phcSummary.slice(0, 10);
+        return {
+            labels: top.map((p) => p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name),
+            datasets: [
+                { label: 'Total', data: top.map((p) => p.totalCases), backgroundColor: CHART_COLORS.saffron, borderRadius: 6 },
+                { label: 'High NEWS2', data: top.map((p) => p.highNEWS2), backgroundColor: CHART_COLORS.red, borderRadius: 6 },
+                { label: 'Pending', data: top.map((p) => p.pending), backgroundColor: CHART_COLORS.yellow, borderRadius: 6 },
+            ],
+        };
+    }, [phcSummary]);
+
+    // Risk Indicator Distribution (Doughnut)
+    const riskDoughnut = useMemo(() => {
+        const greenCount = riskIndicators.filter((r) => r.level === 'green').length;
+        const yellowCount = riskIndicators.filter((r) => r.level === 'yellow').length;
+        const redCount = riskIndicators.filter((r) => r.level === 'red').length;
+        return {
+            labels: ['Low Load', 'Moderate Load', 'High Load'],
+            datasets: [{
+                data: [greenCount, yellowCount, redCount],
+                backgroundColor: [CHART_COLORS.green, CHART_COLORS.yellow, CHART_COLORS.red],
+                borderWidth: 0,
+                hoverOffset: 8,
+            }],
+        };
+    }, [riskIndicators]);
+
+    // High NEWS2 by Village (Horizontal Bar)
+    const news2VillageBar = useMemo(() => {
+        const top = highNEWS2Village.slice(0, 12);
+        return {
+            labels: top.map((v) => v.name),
+            datasets: [{
+                label: 'High NEWS2 Cases',
+                data: top.map((v) => v.count),
+                backgroundColor: CHART_COLORS.red,
+                borderRadius: 6,
+            }],
+        };
+    }, [highNEWS2Village]);
+
+    // High NEWS2 by PHC (Bar)
+    const news2PhcBar = useMemo(() => {
+        const top = highNEWS2PHC.slice(0, 10);
+        return {
+            labels: top.map((p) => p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name),
+            datasets: [{
+                label: 'High NEWS2 Cases',
+                data: top.map((p) => p.count),
+                backgroundColor: CHART_COLORS.saffron,
+                borderRadius: 6,
+            }],
+        };
+    }, [highNEWS2PHC]);
+
+    // Response Time Bar
+    const responseBar = useMemo(() => {
+        const phcs = responseTimes.phcs.slice(0, 10);
+        return {
+            labels: phcs.map((p) => p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name),
+            datasets: [{
+                label: 'Avg Response (min)',
+                data: phcs.map((p) => Math.round(p.avgMs / 60000)),
+                backgroundColor: phcs.map((p) =>
+                    p.avgMs > 3600000 ? CHART_COLORS.red :
+                        p.avgMs > 1800000 ? CHART_COLORS.yellow :
+                            CHART_COLORS.green
+                ),
+                borderRadius: 6,
+            }],
+        };
+    }, [responseTimes]);
+
+    // Village Case Load (Stacked Bar)
+    const villageBar = useMemo(() => {
+        const top = villageCaseLoad.slice(0, 12);
+        return {
+            labels: top.map((v) => v.name),
+            datasets: [
+                { label: 'Low Risk', data: top.map((v) => v.totalCases - v.highRisk), backgroundColor: CHART_COLORS.green, borderRadius: 4 },
+                { label: 'High Risk', data: top.map((v) => v.highRisk), backgroundColor: CHART_COLORS.red, borderRadius: 4 },
+                { label: 'Monitoring', data: top.map((v) => v.monitoring), backgroundColor: CHART_COLORS.indigo, borderRadius: 4 },
+            ],
+        };
+    }, [villageCaseLoad]);
 
     const sections = [
         { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -96,7 +270,7 @@ export default function AdminDashboard() {
                 })}
             </div>
 
-            {/* ───── OVERVIEW SECTION (Features 1 & 2) ───── */}
+            {/* ───── OVERVIEW SECTION ───── */}
             {activeSection === 'overview' && (
                 <div className="stagger-children">
                     {/* Global Summary Cards */}
@@ -131,8 +305,54 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
+                    {/* Charts Row */}
+                    <div className="admin-chart-row">
+                        {/* Case Status Doughnut */}
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <Activity size={16} /> Case Status Distribution
+                            </h3>
+                            <div className="admin-chart-container admin-chart-doughnut">
+                                {visits.length > 0 ? (
+                                    <Doughnut
+                                        data={statusDistribution}
+                                        options={{
+                                            ...chartDefaults,
+                                            cutout: '62%',
+                                            plugins: {
+                                                ...chartDefaults.plugins,
+                                                legend: { ...chartDefaults.plugins.legend, position: 'bottom' },
+                                            },
+                                        }}
+                                    />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
+
+                        {/* PHC Case Load Bar */}
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <Building2 size={16} /> PHC Case Load
+                            </h3>
+                            <div className="admin-chart-container">
+                                {phcSummary.length > 0 ? (
+                                    <Bar
+                                        data={phcBarData}
+                                        options={{
+                                            ...chartDefaults,
+                                            scales: {
+                                                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
+                                            },
+                                        }}
+                                    />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* PHC Summary Table */}
-                    <div className="card">
+                    <div className="card" style={{ marginTop: '1.5rem' }}>
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
                             <Building2 size={18} /> PHC-Wise Summary
                         </h3>
@@ -157,21 +377,11 @@ export default function AdminDashboard() {
                                             <tr key={i}>
                                                 <td style={{ fontWeight: 600 }}>{p.name}</td>
                                                 <td>{p.totalCases}</td>
-                                                <td>
-                                                    <span className={`badge ${p.highNEWS2 > 0 ? 'badge-red' : 'badge-green'}`}>
-                                                        {p.highNEWS2}
-                                                    </span>
-                                                </td>
+                                                <td><span className={`badge ${p.highNEWS2 > 0 ? 'badge-red' : 'badge-green'}`}>{p.highNEWS2}</span></td>
                                                 <td>{p.escalated}</td>
                                                 <td>{p.approvedReferrals}</td>
                                                 <td>{p.underMonitoring}</td>
-                                                <td>
-                                                    {p.pending > 0 ? (
-                                                        <span className="badge badge-yellow">{p.pending}</span>
-                                                    ) : (
-                                                        <span className="badge badge-green">0</span>
-                                                    )}
-                                                </td>
+                                                <td>{p.pending > 0 ? <span className="badge badge-yellow">{p.pending}</span> : <span className="badge badge-green">0</span>}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -182,23 +392,44 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* ───── CLINICAL LOAD MAP (Feature 3) ───── */}
+            {/* ───── CLINICAL LOAD MAP ───── */}
             {activeSection === 'riskmap' && (
                 <div className="stagger-children">
-                    <div className="card">
-                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
-                            <MapPin size={18} /> Clinical Load Distribution Visualization
-                        </h3>
-                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1.25rem' }}>
-                            PHCs color-coded by percentage of high NEWS2 cases. This is a case load visualization, not an outbreak indicator.
-                        </p>
+                    <div className="admin-chart-row">
+                        {/* Risk Distribution Doughnut */}
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <ShieldAlert size={16} /> Risk Load Distribution
+                            </h3>
+                            <div className="admin-chart-container admin-chart-doughnut">
+                                {riskIndicators.length > 0 ? (
+                                    <Doughnut
+                                        data={riskDoughnut}
+                                        options={{
+                                            ...chartDefaults,
+                                            cutout: '62%',
+                                            plugins: {
+                                                ...chartDefaults.plugins,
+                                                legend: { ...chartDefaults.plugins.legend, position: 'bottom' },
+                                            },
+                                        }}
+                                    />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
 
-                        {riskIndicators.length === 0 ? (
-                            <div className="empty-state"><p>No PHC data available.</p></div>
-                        ) : (
-                            <>
-                                {/* Risk Map Grid */}
-                                <div className="risk-map-grid">
+                        {/* Risk Map Cards */}
+                        <div className="card admin-chart-card" style={{ overflow: 'auto' }}>
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
+                                <MapPin size={16} /> Clinical Load Visualization
+                            </h3>
+                            <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+                                Case load visualization — not an outbreak indicator.
+                            </p>
+                            {riskIndicators.length === 0 ? (
+                                <div className="empty-state"><p>No data</p></div>
+                            ) : (
+                                <div className="risk-map-grid" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                     {riskIndicators.map((phc, i) => (
                                         <div key={i} className={`risk-map-card risk-map-${phc.level}`}>
                                             <div className={`risk-map-dot ${phc.level}`}></div>
@@ -210,86 +441,112 @@ export default function AdminDashboard() {
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                        </div>
+                    </div>
 
-                                {/* Legend */}
-                                <div className="risk-map-legend">
-                                    <div className="risk-map-legend-item">
-                                        <span className="risk-map-dot green" style={{ width: 10, height: 10 }}></span>
-                                        <span>Low load (&lt;20% high NEWS2)</span>
-                                    </div>
-                                    <div className="risk-map-legend-item">
-                                        <span className="risk-map-dot yellow" style={{ width: 10, height: 10 }}></span>
-                                        <span>Moderate load (20–40%)</span>
-                                    </div>
-                                    <div className="risk-map-legend-item">
-                                        <span className="risk-map-dot red" style={{ width: 10, height: 10 }}></span>
-                                        <span>High load (&gt;40%)</span>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                    {/* Legend */}
+                    <div className="risk-map-legend" style={{ marginTop: '1rem' }}>
+                        <div className="risk-map-legend-item">
+                            <span className="risk-map-dot green" style={{ width: 10, height: 10 }}></span>
+                            <span>Low load (&lt;20%)</span>
+                        </div>
+                        <div className="risk-map-legend-item">
+                            <span className="risk-map-dot yellow" style={{ width: 10, height: 10 }}></span>
+                            <span>Moderate (20–40%)</span>
+                        </div>
+                        <div className="risk-map-legend-item">
+                            <span className="risk-map-dot red" style={{ width: 10, height: 10 }}></span>
+                            <span>High load (&gt;40%)</span>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ───── HIGH NEWS2 MONITORING (Feature 4) ───── */}
+            {/* ───── HIGH NEWS2 MONITORING ───── */}
             {activeSection === 'highnews2' && (
-                <div className="stagger-children" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    {/* Per PHC */}
-                    <div className="card">
-                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                            <Building2 size={18} /> High NEWS2 by PHC
-                        </h3>
-                        {highNEWS2PHC.length === 0 ? (
-                            <div className="empty-state"><p>No high NEWS2 cases.</p></div>
-                        ) : (
-                            <div className="queue-table-wrapper">
-                                <table className="queue-table">
-                                    <thead>
-                                        <tr><th>PHC / Doctor</th><th>Count</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {highNEWS2PHC.map((p, i) => (
-                                            <tr key={i}>
-                                                <td style={{ fontWeight: 600 }}>{p.name}</td>
-                                                <td><span className="badge badge-red">{p.count}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                <div className="stagger-children">
+                    <div className="admin-chart-row">
+                        {/* Per PHC Bar Chart */}
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <Building2 size={16} /> High NEWS2 by PHC
+                            </h3>
+                            <div className="admin-chart-container">
+                                {highNEWS2PHC.length > 0 ? (
+                                    <Bar
+                                        data={news2PhcBar}
+                                        options={{
+                                            ...chartDefaults,
+                                            indexAxis: 'y',
+                                            scales: {
+                                                x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
+                                                y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                            },
+                                            plugins: { ...chartDefaults.plugins, legend: { display: false } },
+                                        }}
+                                    />
+                                ) : <div className="empty-state"><p>No high NEWS2 cases</p></div>}
                             </div>
-                        )}
+                        </div>
+
+                        {/* Per Village Bar Chart */}
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <MapPin size={16} /> High NEWS2 by Village
+                            </h3>
+                            <div className="admin-chart-container">
+                                {highNEWS2Village.length > 0 ? (
+                                    <Bar
+                                        data={news2VillageBar}
+                                        options={{
+                                            ...chartDefaults,
+                                            indexAxis: 'y',
+                                            scales: {
+                                                x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
+                                                y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                            },
+                                            plugins: { ...chartDefaults.plugins, legend: { display: false } },
+                                        }}
+                                    />
+                                ) : <div className="empty-state"><p>No high NEWS2 cases</p></div>}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Per Village */}
-                    <div className="card">
-                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                            <MapPin size={18} /> High NEWS2 by Village
-                        </h3>
-                        {highNEWS2Village.length === 0 ? (
-                            <div className="empty-state"><p>No high NEWS2 cases.</p></div>
-                        ) : (
-                            <div className="queue-table-wrapper">
-                                <table className="queue-table">
-                                    <thead>
-                                        <tr><th>Village</th><th>Count</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {highNEWS2Village.map((v, i) => (
-                                            <tr key={i}>
-                                                <td style={{ fontWeight: 600 }}>{v.name}</td>
-                                                <td><span className="badge badge-red">{v.count}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                    {/* Count tables below */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                        <div className="card">
+                            <h3 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>PHC Detail Table</h3>
+                            {highNEWS2PHC.length === 0 ? <p className="text-muted" style={{ fontSize: '0.8rem' }}>No data</p> : (
+                                <div className="queue-table-wrapper">
+                                    <table className="queue-table">
+                                        <thead><tr><th>PHC / Doctor</th><th>Count</th></tr></thead>
+                                        <tbody>
+                                            {highNEWS2PHC.map((p, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{p.name}</td><td><span className="badge badge-red">{p.count}</span></td></tr>))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                        <div className="card">
+                            <h3 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>Village Detail Table</h3>
+                            {highNEWS2Village.length === 0 ? <p className="text-muted" style={{ fontSize: '0.8rem' }}>No data</p> : (
+                                <div className="queue-table-wrapper">
+                                    <table className="queue-table">
+                                        <thead><tr><th>Village</th><th>Count</th></tr></thead>
+                                        <tbody>
+                                            {highNEWS2Village.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.name}</td><td><span className="badge badge-red">{v.count}</span></td></tr>))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ───── RESPONSE TIMES (Feature 5) ───── */}
+            {/* ───── RESPONSE TIMES ───── */}
             {activeSection === 'response' && (
                 <div className="stagger-children">
                     {/* Summary Cards */}
@@ -304,42 +561,53 @@ export default function AdminDashboard() {
                         <div className="stat-card">
                             <div className="stat-card-icon green"><Zap size={24} /></div>
                             <div>
-                                <div className="stat-card-value">
-                                    {responseTimes.fastest ? responseTimes.fastest.name : '—'}
-                                </div>
-                                <div className="stat-card-label">
-                                    Fastest PHC {responseTimes.fastest ? `(${formatDuration(responseTimes.fastest.avgMs)})` : ''}
-                                </div>
+                                <div className="stat-card-value">{responseTimes.fastest ? responseTimes.fastest.name : '—'}</div>
+                                <div className="stat-card-label">{responseTimes.fastest ? `Fastest (${formatDuration(responseTimes.fastest.avgMs)})` : 'Fastest PHC'}</div>
                             </div>
                         </div>
                         <div className="stat-card">
                             <div className="stat-card-icon red"><AlertTriangle size={24} /></div>
                             <div>
                                 <div className="stat-card-value">{responseTimes.delayed.length}</div>
-                                <div className="stat-card-label">PHCs with Delayed Response</div>
+                                <div className="stat-card-label">Delayed Response PHCs</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* PHC Response Table */}
+                    {/* Response Time Chart */}
                     <div className="card">
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                            <Clock size={18} /> PHC Response Time Details
+                            <Clock size={16} /> Average Response Time by PHC (minutes)
+                        </h3>
+                        <div className="admin-chart-container" style={{ height: '300px' }}>
+                            {responseTimes.phcs.length > 0 ? (
+                                <Bar
+                                    data={responseBar}
+                                    options={{
+                                        ...chartDefaults,
+                                        scales: {
+                                            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, title: { display: true, text: 'Minutes', font: { size: 11 } } },
+                                        },
+                                        plugins: { ...chartDefaults.plugins, legend: { display: false } },
+                                    }}
+                                />
+                            ) : <div className="empty-state"><p>No response data yet</p></div>}
+                        </div>
+                    </div>
+
+                    {/* Response Table */}
+                    <div className="card" style={{ marginTop: '1rem' }}>
+                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <Clock size={16} /> Response Time Details
                         </h3>
                         {responseTimes.phcs.length === 0 ? (
-                            <div className="empty-state"><p>No response time data available yet.</p></div>
+                            <div className="empty-state"><p>No data</p></div>
                         ) : (
                             <div className="queue-table-wrapper">
                                 <table className="queue-table">
                                     <thead>
-                                        <tr>
-                                            <th>PHC / Doctor</th>
-                                            <th>Cases Reviewed</th>
-                                            <th>Avg Response</th>
-                                            <th>Fastest</th>
-                                            <th>Slowest</th>
-                                            <th>Status</th>
-                                        </tr>
+                                        <tr><th>PHC / Doctor</th><th>Reviewed</th><th>Avg</th><th>Fastest</th><th>Slowest</th><th>Status</th></tr>
                                     </thead>
                                     <tbody>
                                         {responseTimes.phcs.map((p, i) => (
@@ -350,13 +618,9 @@ export default function AdminDashboard() {
                                                 <td className="text-muted">{formatDuration(p.minMs)}</td>
                                                 <td className="text-muted">{formatDuration(p.maxMs)}</td>
                                                 <td>
-                                                    {p.avgMs > 3600000 ? (
-                                                        <span className="badge badge-red">Delayed</span>
-                                                    ) : p.avgMs > 1800000 ? (
-                                                        <span className="badge badge-yellow">Moderate</span>
-                                                    ) : (
-                                                        <span className="badge badge-green">Good</span>
-                                                    )}
+                                                    {p.avgMs > 3600000 ? <span className="badge badge-red">Delayed</span> :
+                                                        p.avgMs > 1800000 ? <span className="badge badge-yellow">Moderate</span> :
+                                                            <span className="badge badge-green">Good</span>}
                                                 </td>
                                             </tr>
                                         ))}
@@ -368,48 +632,52 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* ───── VILLAGE CASE LOAD (Feature 8) ───── */}
+            {/* ───── VILLAGE CASE LOAD ───── */}
             {activeSection === 'villages' && (
                 <div className="stagger-children">
+                    {/* Stacked Bar Chart */}
                     <div className="card">
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
-                            <MapPin size={18} /> Village-Level Case Distribution
+                            <MapPin size={16} /> Village Case Distribution
                         </h3>
-                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>
-                            Operational visibility of case load by village. No predictive claims.
+                        <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+                            Operational visibility — no predictive claims.
                         </p>
+                        <div className="admin-chart-container" style={{ height: '320px' }}>
+                            {villageCaseLoad.length > 0 ? (
+                                <Bar
+                                    data={villageBar}
+                                    options={{
+                                        ...chartDefaults,
+                                        scales: {
+                                            x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                                            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+                                        },
+                                    }}
+                                />
+                            ) : <div className="empty-state"><p>No village data</p></div>}
+                        </div>
+                    </div>
+
+                    {/* Village Table */}
+                    <div className="card" style={{ marginTop: '1rem' }}>
+                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <MapPin size={16} /> Village Detail Table
+                        </h3>
                         {villageCaseLoad.length === 0 ? (
-                            <div className="empty-state"><p>No village data available.</p></div>
+                            <div className="empty-state"><p>No data</p></div>
                         ) : (
                             <div className="queue-table-wrapper">
                                 <table className="queue-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Village</th>
-                                            <th>Total Cases</th>
-                                            <th>High-Risk</th>
-                                            <th>Monitoring</th>
-                                            <th>Pending</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Village</th><th>Total</th><th>High-Risk</th><th>Monitoring</th><th>Pending</th></tr></thead>
                                     <tbody>
                                         {villageCaseLoad.map((v, i) => (
                                             <tr key={i}>
                                                 <td style={{ fontWeight: 600 }}>{v.name}</td>
                                                 <td>{v.totalCases}</td>
-                                                <td>
-                                                    <span className={`badge ${v.highRisk > 0 ? 'badge-red' : 'badge-green'}`}>
-                                                        {v.highRisk}
-                                                    </span>
-                                                </td>
+                                                <td><span className={`badge ${v.highRisk > 0 ? 'badge-red' : 'badge-green'}`}>{v.highRisk}</span></td>
                                                 <td>{v.monitoring}</td>
-                                                <td>
-                                                    {v.pending > 0 ? (
-                                                        <span className="badge badge-yellow">{v.pending}</span>
-                                                    ) : (
-                                                        '0'
-                                                    )}
-                                                </td>
+                                                <td>{v.pending > 0 ? <span className="badge badge-yellow">{v.pending}</span> : '0'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

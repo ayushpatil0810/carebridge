@@ -1,5 +1,6 @@
 // ============================================================
 // PHC Dashboard — Smart Case Queue + Village Overview + ASHA Stats
+// Enhanced with Chart.js visualizations
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,6 +14,16 @@ import {
     timeSince,
     formatDuration,
 } from '../../services/visitService';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    ArcElement,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import {
     Clock,
     ShieldAlert,
@@ -28,6 +39,26 @@ import {
     Activity,
     ArrowUpDown,
 } from 'lucide-react';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+const COLORS = {
+    saffron: '#FF8800',
+    red: '#DC2626',
+    green: '#22C55E',
+    indigo: '#6366F1',
+    yellow: '#F59E0B',
+    teal: '#14B8A6',
+};
+
+const chartBase = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { labels: { font: { family: "'Inter', sans-serif", size: 11 }, usePointStyle: true, padding: 14 } },
+        tooltip: { backgroundColor: 'rgba(30,30,30,0.92)', cornerRadius: 8, padding: 10, bodyFont: { size: 11 }, titleFont: { size: 12, weight: 600 } },
+    },
+};
 
 export default function PHCDashboard() {
     const [allVisits, setAllVisits] = useState([]);
@@ -107,18 +138,76 @@ export default function PHCDashboard() {
         return Object.values(stats).sort((a, b) => b.pending - a.pending || b.highRisk - a.highRisk);
     }, [allVisits]);
 
+    // ──── CHART DATA ────
+
+    // Risk level distribution (doughnut for queue section)
+    const riskDoughnut = useMemo(() => {
+        const counts = { Red: 0, Yellow: 0, Green: 0 };
+        allVisits.forEach(v => { if (counts[v.riskLevel] !== undefined) counts[v.riskLevel]++; });
+        return {
+            labels: ['High Risk (Red)', 'Moderate (Yellow)', 'Low Risk (Green)'],
+            datasets: [{
+                data: [counts.Red, counts.Yellow, counts.Green],
+                backgroundColor: [COLORS.red, COLORS.yellow, COLORS.green],
+                borderWidth: 0,
+                hoverOffset: 6,
+            }],
+        };
+    }, [allVisits]);
+
+    // Status distribution (doughnut)
+    const statusDoughnut = useMemo(() => {
+        return {
+            labels: ['Pending', 'Monitoring', 'Awaiting Response', 'Reviewed'],
+            datasets: [{
+                data: [pendingVisits.length, monitoringVisits.length, clarificationVisits.length, reviewedVisits.length],
+                backgroundColor: [COLORS.saffron, COLORS.indigo, COLORS.yellow, COLORS.green],
+                borderWidth: 0,
+                hoverOffset: 6,
+            }],
+        };
+    }, [pendingVisits, monitoringVisits, clarificationVisits, reviewedVisits]);
+
+    // Village bar chart
+    const villageBarData = useMemo(() => {
+        const top = villageStats.slice(0, 10);
+        return {
+            labels: top.map(v => v.village),
+            datasets: [
+                { label: 'Total', data: top.map(v => v.total), backgroundColor: COLORS.saffron, borderRadius: 6 },
+                { label: 'High-Risk', data: top.map(v => v.highRisk), backgroundColor: COLORS.red, borderRadius: 6 },
+                { label: 'Pending', data: top.map(v => v.pending), backgroundColor: COLORS.yellow, borderRadius: 6 },
+            ],
+        };
+    }, [villageStats]);
+
+    // ASHA bar chart
+    const ashaBarData = useMemo(() => ({
+        labels: ashaStats.map(a => a.name.length > 12 ? a.name.slice(0, 12) + '…' : a.name),
+        datasets: [
+            { label: 'Submitted', data: ashaStats.map(a => a.totalCases), backgroundColor: COLORS.saffron, borderRadius: 6 },
+            { label: 'Reviewed', data: ashaStats.map(a => a.reviewedCases), backgroundColor: COLORS.green, borderRadius: 6 },
+        ],
+    }), [ashaStats]);
+
+    // ASHA approval rate bar
+    const ashaApprovalBar = useMemo(() => ({
+        labels: ashaStats.map(a => a.name.length > 12 ? a.name.slice(0, 12) + '…' : a.name),
+        datasets: [{
+            label: 'Approval Rate %',
+            data: ashaStats.map(a => a.approvalRate),
+            backgroundColor: ashaStats.map(a =>
+                a.approvalRate >= 70 ? COLORS.green :
+                    a.approvalRate >= 40 ? COLORS.yellow : COLORS.red
+            ),
+            borderRadius: 6,
+        }],
+    }), [ashaStats]);
+
     const getRiskClass = (level) => {
         if (level === 'Red') return 'red';
         if (level === 'Yellow') return 'yellow';
         return 'green';
-    };
-
-    const formatTime = (timestamp) => {
-        if (!timestamp) return '—';
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleString('en-IN', {
-            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-        });
     };
 
     // Check if monitoring has expired
@@ -184,25 +273,52 @@ export default function PHCDashboard() {
             </div>
 
             {/* Section Switcher */}
-            <div className="section-switcher" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <div className="admin-section-switcher" style={{ marginBottom: '1.25rem' }}>
                 {[
-                    { key: 'queue', label: 'Case Queue', icon: <ArrowUpDown size={14} /> },
-                    { key: 'villages', label: 'Village Overview', icon: <MapPin size={14} /> },
-                    { key: 'asha', label: 'ASHA Stats', icon: <BarChart3 size={14} /> },
-                ].map(s => (
-                    <button
-                        key={s.key}
-                        className={`btn ${activeSection === s.key ? 'btn-primary' : 'btn-secondary'}`}
-                        onClick={() => setActiveSection(s.key)}
-                    >
-                        {s.icon} {s.label}
-                    </button>
-                ))}
+                    { key: 'queue', label: 'Case Queue', icon: ArrowUpDown },
+                    { key: 'villages', label: 'Village Overview', icon: MapPin },
+                    { key: 'asha', label: 'ASHA Stats', icon: BarChart3 },
+                ].map(s => {
+                    const Icon = s.icon;
+                    return (
+                        <button
+                            key={s.key}
+                            className={`admin-section-btn ${activeSection === s.key ? 'active' : ''}`}
+                            onClick={() => setActiveSection(s.key)}
+                        >
+                            <Icon size={16} /> {s.label}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* =============== CASE QUEUE SECTION =============== */}
             {activeSection === 'queue' && (
-                <>
+                <div className="stagger-children">
+                    {/* Quick Visual Charts */}
+                    <div className="admin-chart-row" style={{ marginBottom: '1.25rem' }}>
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <Activity size={16} /> Risk Distribution
+                            </h3>
+                            <div className="admin-chart-container admin-chart-doughnut">
+                                {allVisits.length > 0 ? (
+                                    <Doughnut data={riskDoughnut} options={{ ...chartBase, cutout: '62%', plugins: { ...chartBase.plugins, legend: { ...chartBase.plugins.legend, position: 'bottom' } } }} />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <BarChart3 size={16} /> Status Overview
+                            </h3>
+                            <div className="admin-chart-container admin-chart-doughnut">
+                                {allVisits.length > 0 ? (
+                                    <Doughnut data={statusDoughnut} options={{ ...chartBase, cutout: '62%', plugins: { ...chartBase.plugins, legend: { ...chartBase.plugins.legend, position: 'bottom' } } }} />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Filter Bar */}
                     <div className="filter-bar card" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -337,9 +453,9 @@ export default function PHCDashboard() {
                                                 </td>
                                                 <td>
                                                     <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
-                                                            visit.status === 'Under Monitoring' ? 'monitoring' :
-                                                                visit.status === 'Awaiting ASHA Response' ? 'clarification' :
-                                                                    'reviewed'
+                                                        visit.status === 'Under Monitoring' ? 'monitoring' :
+                                                            visit.status === 'Awaiting ASHA Response' ? 'clarification' :
+                                                                'reviewed'
                                                         }`}>
                                                         {visit.status === 'Pending PHC Review' ? 'Pending' :
                                                             visit.status === 'Under Monitoring' ? 'Monitoring' :
@@ -354,107 +470,168 @@ export default function PHCDashboard() {
                             </div>
                         </div>
                     )}
-                </>
+                </div>
             )}
 
             {/* =============== VILLAGE OVERVIEW SECTION =============== */}
             {activeSection === 'villages' && (
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)' }}>
-                        <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <MapPin size={18} /> Village-Wise Patient Overview
+                <div className="stagger-children">
+                    {/* Village Bar Chart */}
+                    <div className="card" style={{ marginBottom: '1rem' }}>
+                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <MapPin size={16} /> Village Case Distribution
                         </h3>
+                        <div className="admin-chart-container" style={{ height: '280px' }}>
+                            {villageStats.length > 0 ? (
+                                <Bar
+                                    data={villageBarData}
+                                    options={{
+                                        ...chartBase,
+                                        scales: {
+                                            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } },
+                                        },
+                                    }}
+                                />
+                            ) : <div className="empty-state"><p>No village data</p></div>}
+                        </div>
                     </div>
-                    {villageStats.length === 0 ? (
-                        <div className="empty-state">
-                            <p>No village data available yet.</p>
+
+                    {/* Village Table */}
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)' }}>
+                            <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <MapPin size={18} /> Village-Wise Patient Overview
+                            </h3>
                         </div>
-                    ) : (
-                        <div className="queue-table-wrapper">
-                            <table className="queue-table">
-                                <thead>
-                                    <tr>
-                                        <th>Village</th>
-                                        <th>Total Cases</th>
-                                        <th>High-Risk</th>
-                                        <th>Pending</th>
-                                        <th>Monitoring</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {villageStats.map((vs) => (
-                                        <tr key={vs.village} className="queue-row" onClick={() => { setActiveSection('queue'); setFilterVillage(vs.village); }}>
-                                            <td style={{ fontWeight: 600 }}>{vs.village}</td>
-                                            <td>{vs.total}</td>
-                                            <td>
-                                                {vs.highRisk > 0 ? (
-                                                    <span className="badge badge-red">{vs.highRisk}</span>
-                                                ) : (
-                                                    <span className="text-muted">0</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {vs.pending > 0 ? (
-                                                    <span className="badge badge-yellow">{vs.pending}</span>
-                                                ) : (
-                                                    <span className="text-muted">0</span>
-                                                )}
-                                            </td>
-                                            <td>{vs.monitoring}</td>
+                        {villageStats.length === 0 ? (
+                            <div className="empty-state">
+                                <p>No village data available yet.</p>
+                            </div>
+                        ) : (
+                            <div className="queue-table-wrapper">
+                                <table className="queue-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Village</th>
+                                            <th>Total Cases</th>
+                                            <th>High-Risk</th>
+                                            <th>Pending</th>
+                                            <th>Monitoring</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    </thead>
+                                    <tbody>
+                                        {villageStats.map((vs) => (
+                                            <tr key={vs.village} className="queue-row" onClick={() => { setActiveSection('queue'); setFilterVillage(vs.village); }}>
+                                                <td style={{ fontWeight: 600 }}>{vs.village}</td>
+                                                <td>{vs.total}</td>
+                                                <td>
+                                                    {vs.highRisk > 0 ? (
+                                                        <span className="badge badge-red">{vs.highRisk}</span>
+                                                    ) : (
+                                                        <span className="text-muted">0</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {vs.pending > 0 ? (
+                                                        <span className="badge badge-yellow">{vs.pending}</span>
+                                                    ) : (
+                                                        <span className="text-muted">0</span>
+                                                    )}
+                                                </td>
+                                                <td>{vs.monitoring}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
             {/* =============== ASHA STATS SECTION =============== */}
             {activeSection === 'asha' && (
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)' }}>
-                        <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Users size={18} /> ASHA Performance Overview
-                        </h3>
-                        <p className="text-muted" style={{ marginTop: '4px', fontSize: '0.75rem' }}>Operational reporting — not for ranking</p>
+                <div className="stagger-children">
+                    {/* ASHA Charts */}
+                    <div className="admin-chart-row" style={{ marginBottom: '1rem' }}>
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <Users size={16} /> Cases per ASHA Worker
+                            </h3>
+                            <div className="admin-chart-container">
+                                {ashaStats.length > 0 ? (
+                                    <Bar data={ashaBarData} options={{
+                                        ...chartBase,
+                                        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } } },
+                                    }} />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
+                        <div className="card admin-chart-card">
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <CheckCircle2 size={16} /> Referral Approval Rate
+                            </h3>
+                            <div className="admin-chart-container">
+                                {ashaStats.length > 0 ? (
+                                    <Bar data={ashaApprovalBar} options={{
+                                        ...chartBase,
+                                        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.04)' }, title: { display: true, text: '%', font: { size: 11 } } } },
+                                        plugins: { ...chartBase.plugins, legend: { display: false } },
+                                    }} />
+                                ) : <div className="empty-state"><p>No data</p></div>}
+                            </div>
+                        </div>
                     </div>
-                    {ashaStats.length === 0 ? (
-                        <div className="empty-state">
-                            <p>No ASHA data available yet.</p>
+
+                    {/* ASHA Detail Table */}
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)' }}>
+                            <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Users size={18} /> ASHA Performance Overview
+                            </h3>
+                            <p className="text-muted" style={{ marginTop: '4px', fontSize: '0.75rem' }}>Operational reporting — not for ranking</p>
                         </div>
-                    ) : (
-                        <div className="queue-table-wrapper">
-                            <table className="queue-table">
-                                <thead>
-                                    <tr>
-                                        <th>ASHA Worker</th>
-                                        <th>Cases Submitted</th>
-                                        <th>Reviewed</th>
-                                        <th>Avg Response Time</th>
-                                        <th>Referral Approval</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {ashaStats.map((s) => (
-                                        <tr key={s.name} className="queue-row" onClick={() => { setActiveSection('queue'); setFilterASHA(s.name); }}>
-                                            <td style={{ fontWeight: 600 }}>{s.name}</td>
-                                            <td>{s.totalCases}</td>
-                                            <td>{s.reviewedCases}</td>
-                                            <td className="text-muted">{formatDuration(s.avgResponseTimeMs)}</td>
-                                            <td>
-                                                {s.approvalRate > 0 ? (
-                                                    <span className="badge badge-indigo">{s.approvalRate}%</span>
-                                                ) : (
-                                                    <span className="text-muted">—</span>
-                                                )}
-                                            </td>
+                        {ashaStats.length === 0 ? (
+                            <div className="empty-state">
+                                <p>No ASHA data available yet.</p>
+                            </div>
+                        ) : (
+                            <div className="queue-table-wrapper">
+                                <table className="queue-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ASHA Worker</th>
+                                            <th>Cases Submitted</th>
+                                            <th>Reviewed</th>
+                                            <th>Avg Response Time</th>
+                                            <th>Referral Approval</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    </thead>
+                                    <tbody>
+                                        {ashaStats.map((s) => (
+                                            <tr key={s.name} className="queue-row" onClick={() => { setActiveSection('queue'); setFilterASHA(s.name); }}>
+                                                <td style={{ fontWeight: 600 }}>{s.name}</td>
+                                                <td>{s.totalCases}</td>
+                                                <td>{s.reviewedCases}</td>
+                                                <td className="text-muted">{formatDuration(s.avgResponseTimeMs)}</td>
+                                                <td>
+                                                    {s.approvalRate > 0 ? (
+                                                        <div className="perf-bar-container">
+                                                            <div className={`perf-bar ${s.approvalRate >= 70 ? 'perf-bar-green' : s.approvalRate >= 40 ? 'perf-bar-yellow' : 'perf-bar-red'}`} style={{ width: `${Math.min(s.approvalRate, 100)}%` }}></div>
+                                                            <span className="perf-bar-label">{s.approvalRate}%</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

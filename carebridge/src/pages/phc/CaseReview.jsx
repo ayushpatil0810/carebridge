@@ -2,7 +2,7 @@
 // Case Review — Detailed Patient View + Decision Engine + Audit
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -12,6 +12,15 @@ import {
     formatDuration,
 } from '../../services/visitService';
 import { getRiskAdvisory } from '../../utils/news2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import {
     ArrowLeft,
     ShieldAlert,
@@ -35,6 +44,8 @@ import {
     FileText,
     AlertCircle,
 } from 'lucide-react';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 // Map advisory icons
 const advisoryIcons = {
@@ -200,18 +211,54 @@ export default function CaseReview() {
                             </div>
                         </div>
 
-                        {/* NEWS2 Breakdown */}
+                        {/* NEWS2 Breakdown + Chart */}
                         {visit?.news2Breakdown?.length > 0 && (
-                            <div className="news2-breakdown" style={{ marginTop: '1rem' }}>
-                                {visit.news2Breakdown.map((param, i) => (
-                                    <div className="news2-param" key={i}>
-                                        <span className="news2-param-name">{param.name}</span>
-                                        <div className="news2-param-detail">
-                                            <span className="news2-param-value">{param.value ?? '—'}</span>
-                                            <span className={`news2-param-score score-${param.score}`}>{param.score}</span>
+                            <div style={{ marginTop: '1rem' }}>
+                                {/* Horizontal Bar Chart */}
+                                <div style={{ height: `${Math.max(visit.news2Breakdown.length * 38, 140)}px`, marginBottom: '1rem' }}>
+                                    <Bar
+                                        data={{
+                                            labels: visit.news2Breakdown.map(p => p.name),
+                                            datasets: [{
+                                                label: 'Score',
+                                                data: visit.news2Breakdown.map(p => p.score),
+                                                backgroundColor: visit.news2Breakdown.map(p =>
+                                                    p.score >= 3 ? '#DC2626' :
+                                                        p.score >= 2 ? '#F59E0B' :
+                                                            p.score >= 1 ? '#FF8800' :
+                                                                '#22C55E'
+                                                ),
+                                                borderRadius: 4,
+                                                barThickness: 20,
+                                            }],
+                                        }}
+                                        options={{
+                                            indexAxis: 'y',
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                                x: { min: 0, max: 3, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                                                y: { grid: { display: false }, ticks: { font: { size: 11, weight: 600 } } },
+                                            },
+                                            plugins: {
+                                                legend: { display: false },
+                                                tooltip: { backgroundColor: 'rgba(30,30,30,0.92)', cornerRadius: 8, padding: 8, callbacks: { label: (ctx) => `Score: ${ctx.raw} / 3` } },
+                                            },
+                                        }}
+                                    />
+                                </div>
+                                {/* Text Breakdown */}
+                                <div className="news2-breakdown">
+                                    {visit.news2Breakdown.map((param, i) => (
+                                        <div className="news2-param" key={i}>
+                                            <span className="news2-param-name">{param.name}</span>
+                                            <div className="news2-param-detail">
+                                                <span className="news2-param-value">{param.value ?? '—'}</span>
+                                                <span className={`news2-param-score score-${param.score}`}>{param.score}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
