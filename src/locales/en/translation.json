@@ -482,5 +482,39 @@
     "retry": "Retry",
     "apiKeyMissing": "Gemini API key not configured. Add VITE_GEMINI_API_KEY to .env file.",
     "requestFailed": "AI advisory request failed. Please try again."
+  },
+  "sarvam": {
+    "apiKeyMissing": "Sarvam API key not configured. Add VITE_SARVAM_API_KEY to .env file.",
+    "micNotSupported": "Microphone not supported in this browser.",
+    "micDenied": "Microphone access denied. Please allow microphone access.",
+    "micError": "Could not access microphone.",
+    "emptyRecording": "No audio was recorded.",
+    "noTranscript": "No speech detected. Please try again.",
+    "rateLimited": "Rate limit reached. Please wait a moment.",
+    "timeout": "Request timed out. Please try again.",
+    "sttFailed": "Voice recognition failed. Please type manually.",
+    "processing": "Processing...",
+    "stopRecording": "Stop recording",
+    "startRecording": "Start voice input",
+    "stopBtn": "Stop",
+    "voiceBtn": "Voice"
+  },
+  "sbar": {
+    "title": "SBAR Summary",
+    "situation": "SITUATION",
+    "background": "BACKGROUND",
+    "assessment": "ASSESSMENT",
+    "recommendation": "RECOMMENDATION",
+    "aiGenerated": "AI Generated",
+    "templateGenerated": "Template",
+    "localLang": "Local Language",
+    "disclaimer": "AI-structured summary for documentation purposes only. Not a diagnosis. All decisions remain with the clinician.",
+    "rawNotes": "Raw Clinical Notes",
+    "generateBtn": "Generate SBAR Summary",
+    "generating": "Generating SBAR...",
+    "generated": "SBAR summary generated successfully.",
+    "fallbackUsed": "AI unavailable. Template SBAR saved.",
+    "saveError": "SBAR generated but failed to save.",
+    "generationFailed": "SBAR generation failed."
   }
 }

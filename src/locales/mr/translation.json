@@ -482,5 +482,39 @@
     "retry": "पुन्हा प्रयत्न करा",
     "apiKeyMissing": "Gemini API कळ कॉन्फिगर केलेली नाही. .env फाइलमध्ये VITE_GEMINI_API_KEY जोडा.",
     "requestFailed": "AI सल्ला विनंती अयशस्वी. कृपया पुन्हा प्रयत्न करा."
+  },
+  "sarvam": {
+    "apiKeyMissing": "Sarvam API कळ कॉन्फिगर केलेली नाही. .env फाइलमध्ये VITE_SARVAM_API_KEY जोडा.",
+    "micNotSupported": "या ब्राउझरमध्ये मायक्रोफोन समर्थित नाही.",
+    "micDenied": "मायक्रोफोन प्रवेश नाकारला. कृपया मायक्रोफोन प्रवेशास अनुमती द्या.",
+    "micError": "मायक्रोफोन वापरता आला नाही.",
+    "emptyRecording": "कोणताही ऑडिओ रेकॉर्ड झाला नाही.",
+    "noTranscript": "बोलणे ओळखले नाही. कृपया पुन्हा प्रयत्न करा.",
+    "rateLimited": "मर्यादा गाठली. कृपया थोडी वाट पहा.",
+    "timeout": "विनंती वेळ संपली. कृपया पुन्हा प्रयत्न करा.",
+    "sttFailed": "आवाज ओळख अयशस्वी. कृपया स्वतः टाइप करा.",
+    "processing": "प्रक्रिया होत आहे...",
+    "stopRecording": "रेकॉर्डिंग थांबवा",
+    "startRecording": "आवाज इनपुट सुरू करा",
+    "stopBtn": "थांबा",
+    "voiceBtn": "आवाज"
+  },
+  "sbar": {
+    "title": "SBAR सारांश",
+    "situation": "परिस्थिती",
+    "background": "पार्श्वभूमी",
+    "assessment": "मूल्यांकन",
+    "recommendation": "शिफारस",
+    "aiGenerated": "AI ने तयार केले",
+    "templateGenerated": "टेम्पलेट",
+    "localLang": "स्थानिक भाषा",
+    "disclaimer": "AI-संरचित सारांश केवळ दस्तऐवजीकरणासाठी. हे निदान नाही. सर्व निर्णय चिकित्सकाकडे राहतात.",
+    "rawNotes": "मूळ क्लिनिकल नोट्स",
+    "generateBtn": "SBAR सारांश तयार करा",
+    "generating": "SBAR तयार होत आहे...",
+    "generated": "SBAR सारांश यशस्वीरित्या तयार झाला.",
+    "fallbackUsed": "AI अनुपलब्ध. टेम्पलेट SBAR जतन केला.",
+    "saveError": "SBAR तयार झाला पण जतन अयशस्वी.",
+    "generationFailed": "SBAR तयार करणे अयशस्वी."
   }
 }

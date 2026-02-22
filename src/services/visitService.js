@@ -68,10 +68,28 @@ export async function createVisit(data) {
     // Audit
     responseTimeMs: null,
     auditTrail: [],
+    // SBAR (Sarvam AI)
+    sbarEnglish: "",
+    sbarTranslated: null,
+    rawNotes: data.chiefComplaint || "",
+    aiGenerated: false,
   };
 
   const docRef = await addDoc(collection(db, COLLECTION), visit);
   return { id: docRef.id, ...visit };
+}
+
+/**
+ * Update visit with SBAR summary (called after AI generation)
+ */
+export async function updateVisitSBAR(visitId, sbarData) {
+  const docRef = doc(db, COLLECTION, visitId);
+  await updateDoc(docRef, {
+    sbarEnglish: sbarData.sbarEnglish || "",
+    sbarTranslated: sbarData.sbarTranslated || null,
+    aiGenerated: sbarData.aiGenerated || false,
+    rawNotes: sbarData.rawNotes || "",
+  });
 }
 
 /**

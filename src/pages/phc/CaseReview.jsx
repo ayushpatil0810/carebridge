@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import MessageSuggestModal from '../../components/MessageSuggestModal';
+import SBARDisplay from '../../components/SBARDisplay';
 import {
     getVisitById,
     submitDoctorReview,
@@ -392,6 +393,16 @@ export default function CaseReview() {
                     </div>
 
                     {/* SBAR Summary (Feature #2) */}
+                    {/* SBAR Summary — AI-generated (read-only) or fallback */}
+                    {visit?.sbarEnglish ? (
+                        <SBARDisplay
+                            sbarEnglish={visit.sbarEnglish}
+                            sbarTranslated={visit.sbarTranslated}
+                            aiGenerated={visit.aiGenerated || false}
+                            rawNotes={visit.rawNotes || visit.chiefComplaint}
+                            showRawNotes={true}
+                        />
+                    ) : (
                     <div className="card" style={{ marginBottom: '1rem' }}>
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
                             <FileText size={18} /> SBAR Summary
@@ -436,6 +447,7 @@ export default function CaseReview() {
                             </div>
                         </div>
                     </div>
+                    )}
 
                     {/* Clarification History (if exists) */}
                     {visit?.clarificationMessage && (

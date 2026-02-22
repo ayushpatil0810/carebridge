@@ -12,7 +12,10 @@ import { validateVital, validateAllVitals } from '../../utils/vitalsValidation';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import { scheduleFollowUp } from '../../services/followUpService';
 import MessageSuggestModal from '../../components/MessageSuggestModal';
+import VoiceInput from '../../components/VoiceInput';
+import SBARDisplay from '../../components/SBARDisplay';
 import { getAIClinicalAdvisory, isAIAdvisoryAvailable } from '../../services/aiAdvisoryService';
+import { generateSBAR, isSarvamAvailable } from '../../services/sarvamService';
 import {
     Calculator,
     Save,
@@ -44,6 +47,7 @@ import {
     ShieldQuestion,
     Lightbulb,
     ArrowRight,
+    FileText,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
@@ -64,7 +68,7 @@ export default function VisitEntry() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user, userName } = useAuth();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { toast } = useToast();
 
     const [patient, setPatient] = useState(null);
@@ -112,6 +116,11 @@ export default function VisitEntry() {
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState('');
     const [aiExpanded, setAiExpanded] = useState(true);
+
+    // SBAR (Sarvam AI)
+    const [sbarResult, setSbarResult] = useState(null);
+    const [sbarLoading, setSbarLoading] = useState(false);
+    const [sbarError, setSbarError] = useState('');
 
     // Escalation context
     const ESCALATION_REASONS = [
@@ -308,6 +317,55 @@ export default function VisitEntry() {
         }
     };
 
+    // SBAR Generation via Sarvam AI
+    const handleGenerateSBAR = async () => {
+        if (!patient || !news2Result || !savedVisitId) return;
+        setSbarLoading(true);
+        setSbarError('');
+        try {
+            const result = await generateSBAR(
+                chiefComplaint,
+                vitals,
+                news2Result.totalScore,
+                {
+                    age: patient.age,
+                    gender: patient.gender,
+                    redFlags,
+                    consciousness,
+                    symptomDuration,
+                    riskLevel: news2Result.riskLevel,
+                },
+                i18n.language,
+            );
+            setSbarResult(result);
+
+            // Save SBAR to Firestore visit document
+            try {
+                const { updateVisitSBAR } = await import('../../services/visitService');
+                await updateVisitSBAR(savedVisitId, {
+                    sbarEnglish: result.sbarEnglish,
+                    sbarTranslated: result.sbarTranslated || null,
+                    aiGenerated: result.aiGenerated,
+                    rawNotes: chiefComplaint,
+                });
+                toast.success(
+                    result.aiGenerated
+                        ? t('sbar.generated', 'SBAR summary generated successfully.')
+                        : t('sbar.fallbackUsed', 'AI unavailable. Template SBAR saved.')
+                );
+            } catch (saveErr) {
+                console.error('Error saving SBAR:', saveErr);
+                // SBAR generated but save failed — still show it
+                toast.error(t('sbar.saveError', 'SBAR generated but failed to save.'));
+            }
+        } catch (err) {
+            console.error('SBAR generation error:', err);
+            setSbarError(t('sbar.generationFailed', 'SBAR generation failed.'));
+        } finally {
+            setSbarLoading(false);
+        }
+    };
+
     // Determine trigger template based on risk level
     const getTriggerTemplate = () => {
         if (!news2Result) return null;
@@ -364,6 +422,16 @@ export default function VisitEntry() {
                 </div>
 
                 <div className="form-group">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label className="form-label" style={{ margin: 0 }}>
+                            {t('visitEntry.complaintLabel', 'Describe the complaint')}
+                        </label>
+                        <VoiceInput
+                            onTranscript={(text) => {
+                                setChiefComplaint(prev => prev ? prev + ' ' + text : text);
+                            }}
+                        />
+                    </div>
                     <textarea
                         className="form-input"
                         value={chiefComplaint}
@@ -919,6 +987,29 @@ export default function VisitEntry() {
                                                             <ShieldAlert size={16} /> {t('visitEntry.markEmergency')}
                                                         </button>
                                                     </div>
+
+                                                    {/* SBAR Generation */}
+                                                    {!sbarResult && (
+                                                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                onClick={handleGenerateSBAR}
+                                                                disabled={sbarLoading}
+                                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                                            >
+                                                                {sbarLoading ? (
+                                                                    <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('sbar.generating', 'Generating SBAR...')}</>
+                                                                ) : (
+                                                                    <><FileText size={14} /> {t('sbar.generateBtn', 'Generate SBAR Summary')}</>
+                                                                )}
+                                                            </button>
+                                                            {sbarError && (
+                                                                <p style={{ fontSize: '0.75rem', color: 'var(--alert-red)', marginTop: '0.5rem' }}>
+                                                                    <AlertTriangle size={12} style={{ verticalAlign: 'middle' }} /> {sbarError}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </>
                                             ) : (
                                                 /* ✅ Escalation Context Selection */
@@ -1004,6 +1095,17 @@ export default function VisitEntry() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* SBAR Summary Display */}
+                            {sbarResult && (
+                                <SBARDisplay
+                                    sbarEnglish={sbarResult.sbarEnglish}
+                                    sbarTranslated={sbarResult.sbarTranslated}
+                                    aiGenerated={sbarResult.aiGenerated}
+                                    rawNotes={chiefComplaint}
+                                    showRawNotes={false}
+                                />
+                            )}
 
                             {/* Follow-Up Scheduler */}
                             {savedVisitId && (
