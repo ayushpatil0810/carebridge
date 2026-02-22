@@ -403,50 +403,50 @@ export default function CaseReview() {
                             showRawNotes={true}
                         />
                     ) : (
-                    <div className="card" style={{ marginBottom: '1rem' }}>
-                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                            <FileText size={18} /> SBAR Summary
-                        </h3>
-                        <div className="sbar-section">
-                            <div className="sbar-section-title">SITUATION</div>
-                            <div className="sbar-section-content">
-                                {visit?.patientName}, {visit?.patientAge}, presents with {visit?.chiefComplaint || 'unspecified complaint'}.
-                                {visit?.emergencyFlag && ' This is an EMERGENCY case.'}
+                        <div className="card" style={{ marginBottom: '1rem' }}>
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                                <FileText size={18} /> SBAR Summary
+                            </h3>
+                            <div className="sbar-section">
+                                <div className="sbar-section-title">SITUATION</div>
+                                <div className="sbar-section-content">
+                                    {visit?.patientName}, {visit?.patientAge}, presents with {visit?.chiefComplaint || 'unspecified complaint'}.
+                                    {visit?.emergencyFlag && ' This is an EMERGENCY case.'}
+                                </div>
+                            </div>
+                            <div className="sbar-section">
+                                <div className="sbar-section-title">BACKGROUND</div>
+                                <div className="sbar-section-content">
+                                    Patient from {visit?.patientVillage || 'unknown village'}.
+                                    Duration: {visit?.symptomDuration || 'not recorded'}.
+                                </div>
+                            </div>
+                            <div className="sbar-section">
+                                <div className="sbar-section-title">ASSESSMENT</div>
+                                <div className="sbar-section-content">
+                                    NEWS2 Score: {visit?.news2Score ?? 'N/A'} ({visit?.riskLevel || 'N/A'} Risk).
+                                    Consciousness: {visit?.consciousness || 'Alert'}.
+                                    {visit?.redFlags?.length > 0 && ` Red flags: ${visit.redFlags.join(', ')}.`}
+                                </div>
+                            </div>
+                            <div className="sbar-section">
+                                <div className="sbar-section-title">RECOMMENDATION</div>
+                                <div className="sbar-section-content">
+                                    {advisory.length > 0 ? (
+                                        advisory.map((item, i) => (
+                                            <div key={i} className="advisory-item">
+                                                <span className="advisory-icon">
+                                                    {advisoryIcons[item.icon] || <CheckCircle2 size={14} />}
+                                                </span>
+                                                {item.text}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        'No specific advisory available.'
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="sbar-section">
-                            <div className="sbar-section-title">BACKGROUND</div>
-                            <div className="sbar-section-content">
-                                Patient from {visit?.patientVillage || 'unknown village'}.
-                                Duration: {visit?.symptomDuration || 'not recorded'}.
-                            </div>
-                        </div>
-                        <div className="sbar-section">
-                            <div className="sbar-section-title">ASSESSMENT</div>
-                            <div className="sbar-section-content">
-                                NEWS2 Score: {visit?.news2Score ?? 'N/A'} ({visit?.riskLevel || 'N/A'} Risk).
-                                Consciousness: {visit?.consciousness || 'Alert'}.
-                                {visit?.redFlags?.length > 0 && ` Red flags: ${visit.redFlags.join(', ')}.`}
-                            </div>
-                        </div>
-                        <div className="sbar-section">
-                            <div className="sbar-section-title">RECOMMENDATION</div>
-                            <div className="sbar-section-content">
-                                {advisory.length > 0 ? (
-                                    advisory.map((item, i) => (
-                                        <div key={i} className="advisory-item">
-                                            <span className="advisory-icon">
-                                                {advisoryIcons[item.icon] || <CheckCircle2 size={14} />}
-                                            </span>
-                                            {item.text}
-                                        </div>
-                                    ))
-                                ) : (
-                                    'No specific advisory available.'
-                                )}
-                            </div>
-                        </div>
-                    </div>
                     )}
 
                     {/* Clarification History (if exists) */}

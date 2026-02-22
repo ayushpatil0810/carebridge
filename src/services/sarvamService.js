@@ -178,7 +178,12 @@ export async function generateSBAR(
   if (!isSarvamAvailable()) {
     console.warn("Sarvam API key missing. Using fallback SBAR template.");
     return {
-      sbarEnglish: generateFallbackSBAR(noteText, vitals, riskScore, patientInfo),
+      sbarEnglish: generateFallbackSBAR(
+        noteText,
+        vitals,
+        riskScore,
+        patientInfo,
+      ),
       sbarTranslated: null,
       aiGenerated: false,
     };
@@ -242,7 +247,10 @@ export async function generateSBAR(
           getSarvamLanguageCode(locale),
         );
       } catch (translateErr) {
-        console.warn("SBAR translation failed, storing English only:", translateErr);
+        console.warn(
+          "SBAR translation failed, storing English only:",
+          translateErr,
+        );
       }
     }
 
@@ -255,7 +263,12 @@ export async function generateSBAR(
     clearTimeout(timeoutId);
     console.error("SBAR generation failed, using fallback:", err);
     return {
-      sbarEnglish: generateFallbackSBAR(noteText, vitals, riskScore, patientInfo),
+      sbarEnglish: generateFallbackSBAR(
+        noteText,
+        vitals,
+        riskScore,
+        patientInfo,
+      ),
       sbarTranslated: null,
       aiGenerated: false,
     };
