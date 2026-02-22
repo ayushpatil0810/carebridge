@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { HEALTH_TEMPLATES, logMessage, getWhatsAppLink } from '../../services/messageService';
+import { HEALTH_TEMPLATES, logMessage, getWhatsAppLink, getTemplateMessage, getTemplateTitle } from '../../services/messageService';
 import {
     BookOpen,
     Send,
@@ -13,16 +13,29 @@ import {
     Search,
     Check,
     MessageSquare,
+    Globe,
 } from 'lucide-react';
 
+const LANG_OPTIONS = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिन्दी' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+    { code: 'bn', label: 'বাংলা' },
+    { code: 'gu', label: 'ગુજરાતી' },
+];
+
 export default function MessageTemplates() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { user, userName } = useAuth();
     const [search, setSearch] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [phone, setPhone] = useState('');
     const [patientName, setPatientName] = useState('');
-    const [useMarathi, setUseMarathi] = useState(false);
+    const [msgLang, setMsgLang] = useState(i18n.language?.split('-')[0] || 'en');
     const [sending, setSending] = useState(false);
     const [sentId, setSentId] = useState(null);
 
@@ -35,7 +48,7 @@ export default function MessageTemplates() {
         if (!selectedTemplate || !phone) return;
         setSending(true);
         try {
-            const msg = useMarathi ? selectedTemplate.messageMarathi : selectedTemplate.message;
+            const msg = getTemplateMessage(selectedTemplate, msgLang);
             await logMessage({
                 patientId: '',
                 patientName,
@@ -96,11 +109,11 @@ export default function MessageTemplates() {
                         <div className="template-card-header">
                             <span className="template-icon">{tpl.icon}</span>
                             <div>
-                                <div className="template-title">{tpl.title}</div>
+                                <div className="template-title">{getTemplateTitle(tpl, msgLang)}</div>
                                 <div className="template-category">{tpl.category}</div>
                             </div>
                         </div>
-                        <p className="template-preview">{tpl.message.length > 80 ? tpl.message.slice(0, 80) + '…' : tpl.message}</p>
+                        <p className="template-preview">{(() => { const m = getTemplateMessage(tpl, msgLang); return m.length > 80 ? m.slice(0, 80) + '…' : m; })()}</p>
                         {selectedTemplate?.id === tpl.id && <div className="template-selected-badge"><Check size={14} /> {t('messageTemplates.selected')}</div>}
                     </div>
                 ))}
@@ -110,18 +123,22 @@ export default function MessageTemplates() {
             {selectedTemplate && (
                 <div className="card" style={{ marginTop: '1rem', borderLeft: '4px solid var(--accent-saffron)' }}>
                     <h4 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                        <MessageSquare size={16} /> {selectedTemplate.title}
+                        <MessageSquare size={16} /> {getTemplateTitle(selectedTemplate, msgLang)}
                     </h4>
 
-                    {selectedTemplate.messageMarathi && (
-                        <div className="msg-lang-toggle" style={{ marginBottom: '0.75rem' }}>
-                            <button className={`btn btn-sm ${!useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(false)}>{t('messageTemplates.english')}</button>
-                            <button className={`btn btn-sm ${useMarathi ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setUseMarathi(true)}>{t('messageTemplates.marathi')}</button>
-                        </div>
-                    )}
+                    {/* Language Selector */}
+                    <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <Globe size={14} style={{ color: 'var(--text-muted)' }} />
+                        <select className="input" value={msgLang} onChange={e => setMsgLang(e.target.value)}
+                            style={{ width: 'auto', fontSize: '0.8rem', padding: '4px 10px' }}>
+                            {LANG_OPTIONS.map(l => (
+                                <option key={l.code} value={l.code}>{l.label}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <div className="msg-preview-box" style={{ marginBottom: '0.75rem' }}>
-                        {useMarathi ? selectedTemplate.messageMarathi : selectedTemplate.message}
+                        {getTemplateMessage(selectedTemplate, msgLang)}
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>

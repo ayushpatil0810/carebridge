@@ -25,7 +25,7 @@ import {
 export default function ClarificationResponse() {
     const { t } = useTranslation();
     const { visitId } = useParams();
-    const { userName } = useAuth();
+    const { user, userName } = useAuth();
     const navigate = useNavigate();
 
     const [visit, setVisit] = useState(null);
@@ -44,6 +44,8 @@ export default function ClarificationResponse() {
             const data = await getVisitById(visitId);
             if (!data) {
                 setError(t('clarification.visitNotFound'));
+            } else if (user && data.createdBy !== user.uid) {
+                setError(t('clarification.unauthorized', 'You do not have access to this visit.'));
             } else {
                 setVisit(data);
             }

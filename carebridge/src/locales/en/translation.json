@@ -313,7 +313,9 @@
     "reminderSent": "Reminder Sent",
     "remind": "Remind",
     "markCompleted": "Mark as completed",
-    "done": "Done"
+    "done": "Done",
+    "missed": "Missed",
+    "reschedule": "Reschedule"
   },
   "messageLog": {
     "title": "Message Log",
@@ -380,7 +382,13 @@
     "createFirstVisit": "Create First Visit",
     "doctorNote": "Doctor Note:",
     "duration": "Duration:",
-    "days": "days"
+    "days": "days",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "fillRequired": "Please fill all required fields",
+    "updateFailed": "Failed to update patient. Please try again."
   },
   "patientRegister": {
     "enterFullName": "Enter patient's full name",
@@ -458,5 +466,21 @@
     "pa": "ਪੰਜਾਬੀ",
     "bn": "বাংলা",
     "gu": "ગુજરાતી"
+  },
+  "aiAdvisory": {
+    "title": "AI Clinical Advisory",
+    "description": "Get AI-powered differential diagnosis suggestions and risk factors based on the patient's vitals and complaint.",
+    "getAdvisory": "Get AI Advisory",
+    "analyzing": "Analyzing clinical data...",
+    "aiProcessing": "AI is reviewing vitals, symptoms, and risk factors",
+    "assessment": "Clinical Assessment",
+    "possibleConditions": "Possible Conditions",
+    "missedRisks": "Risk Factors to Consider",
+    "recommendedActions": "Recommended Actions",
+    "disclaimer": "AI suggestions are not a diagnosis. Always use clinical judgement and consult a doctor for confirmation.",
+    "regenerate": "Regenerate",
+    "retry": "Retry",
+    "apiKeyMissing": "Gemini API key not configured. Add VITE_GEMINI_API_KEY to .env file.",
+    "requestFailed": "AI advisory request failed. Please try again."
   }
 }

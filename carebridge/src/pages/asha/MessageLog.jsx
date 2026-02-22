@@ -138,7 +138,7 @@ export default function MessageLog() {
                                     </span>
                                 </div>
                                 <div className="msg-log-patient">
-                                    {log.patientName || t('messageLog.unknownPatient')}}
+                                    {log.patientName || t('messageLog.unknownPatient')}
                                     {log.patientId && <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '8px' }}>{log.patientId}</span>}
                                 </div>
                                 <div className="msg-log-text">{log.messageText}</div>

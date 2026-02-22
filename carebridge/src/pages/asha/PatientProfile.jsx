@@ -4,22 +4,30 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPatientById } from '../../services/patientService';
+import { useAuth } from '../../contexts/AuthContext';
+import { getPatientById, updatePatient } from '../../services/patientService';
 import { getVisitsByPatient } from '../../services/visitService';
 import { getActiveMaternityRecord, getGestationalAge, daysUntilEDD } from '../../services/maternityService';
 import { getVaccinations, getVaccineStatus, getDaysOverdue } from '../../services/vaccinationService';
-import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle } from 'lucide-react';
+import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle, Pencil, Save, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function PatientProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { t } = useTranslation();
     const [patient, setPatient] = useState(null);
     const [visits, setVisits] = useState([]);
     const [maternityRec, setMaternityRec] = useState(null);
     const [vaccinations, setVaccinations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [unauthorized, setUnauthorized] = useState(false);
+
+    // Edit mode state
+    const [editing, setEditing] = useState(false);
+    const [editData, setEditData] = useState({});
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -31,6 +39,12 @@ export default function PatientProfile() {
                 getPatientById(id),
                 getVisitsByPatient(id),
             ]);
+            // Ownership guard — ASHA can only view their own patients
+            if (p && user && p.createdBy !== user.uid) {
+                setUnauthorized(true);
+                setLoading(false);
+                return;
+            }
             setPatient(p);
             setVisits(v);
             // Load maternity record for female patients
@@ -64,6 +78,47 @@ export default function PatientProfile() {
         });
     };
 
+    const startEditing = () => {
+        setEditData({
+            name: patient.name || '',
+            age: patient.age || '',
+            gender: patient.gender || '',
+            houseNumber: patient.houseNumber || '',
+            village: patient.village || '',
+            contact: patient.contact || '',
+            abhaId: patient.abhaId || '',
+        });
+        setEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setEditing(false);
+        setEditData({});
+    };
+
+    const handleEditChange = (field, value) => {
+        setEditData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!editData.name || !editData.age || !editData.gender || !editData.village || !editData.houseNumber) {
+            alert(t('patientProfile.fillRequired'));
+            return;
+        }
+        setSaving(true);
+        try {
+            await updatePatient(id, editData);
+            const updated = await getPatientById(id);
+            setPatient(updated);
+            setEditing(false);
+        } catch (err) {
+            console.error('Error updating patient:', err);
+            alert(t('patientProfile.updateFailed'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const getRiskClass = (level) => {
         if (level === 'Red') return 'red';
         if (level === 'Yellow') return 'yellow';
@@ -76,6 +131,20 @@ export default function PatientProfile() {
                 <div>
                     <div className="spinner"></div>
                     <div className="loading-text">{t('patientProfile.loadingProfile')}</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (unauthorized) {
+        return (
+            <div className="card">
+                <div className="empty-state">
+                    <div className="empty-icon"><XCircle size={48} strokeWidth={1} /></div>
+                    <p>{t('patientProfile.unauthorized', 'You do not have access to this patient.')}</p>
+                    <button className="btn btn-secondary" onClick={() => navigate('/search')} style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <ArrowLeft size={16} /> {t('patientProfile.backToSearch')}
+                    </button>
                 </div>
             </div>
         );
@@ -124,6 +193,24 @@ export default function PatientProfile() {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {!editing && (
+                            <button className="btn btn-secondary" onClick={startEditing}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Pencil size={16} /> {t('patientProfile.edit')}
+                            </button>
+                        )}
+                        {editing && (
+                            <>
+                                <button className="btn btn-primary" onClick={handleSave} disabled={saving}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Save size={16} /> {saving ? t('patientProfile.saving') : t('patientProfile.save')}
+                                </button>
+                                <button className="btn btn-secondary" onClick={cancelEditing}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <X size={16} /> {t('patientProfile.cancel')}
+                                </button>
+                            </>
+                        )}
                         {patient.gender === 'Female' && (
                             <button className="btn btn-secondary" onClick={() => navigate('/maternity')}
                                 style={{ borderColor: 'var(--accent-saffron)', color: 'var(--accent-saffron)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -139,33 +226,72 @@ export default function PatientProfile() {
                 <div className="warli-divider" style={{ margin: '1rem 0' }}></div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-                    <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.ageGender')}</div>
-                        <div style={{ fontWeight: 500 }}>{patient.age} {t('patientProfile.yrs')} • {patient.gender}</div>
-                    </div>
-                    <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.village')}</div>
-                        <div style={{ fontWeight: 500 }}>{patient.village}</div>
-                    </div>
-                    <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.houseNo')}</div>
-                        <div style={{ fontWeight: 500 }}>{patient.houseNumber}</div>
-                    </div>
-                    <div>
-                        <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.familyId')}</div>
-                        <div style={{ fontWeight: 500 }}>{patient.familyId}</div>
-                    </div>
-                    {patient.abhaId && (
-                        <div>
-                            <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.abhaId')}</div>
-                            <div style={{ fontWeight: 500 }}>{patient.abhaId}</div>
-                        </div>
-                    )}
-                    {patient.contact && (
-                        <div>
-                            <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.contact')}</div>
-                            <div style={{ fontWeight: 500 }}>{patient.contact}</div>
-                        </div>
+                    {editing ? (
+                        <>
+                            <div>
+                                <label className="form-label">{t('register.fullName')} *</label>
+                                <input className="input" value={editData.name} onChange={e => handleEditChange('name', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.age')} *</label>
+                                <input className="input" type="number" value={editData.age} onChange={e => handleEditChange('age', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.gender')} *</label>
+                                <select className="input" value={editData.gender} onChange={e => handleEditChange('gender', e.target.value)}>
+                                    <option value="Male">{t('register.male')}</option>
+                                    <option value="Female">{t('register.female')}</option>
+                                    <option value="Other">{t('register.other')}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.village')} *</label>
+                                <input className="input" value={editData.village} onChange={e => handleEditChange('village', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.houseNumber')} *</label>
+                                <input className="input" value={editData.houseNumber} onChange={e => handleEditChange('houseNumber', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.contact')}</label>
+                                <input className="input" value={editData.contact} onChange={e => handleEditChange('contact', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="form-label">{t('register.abhaId')}</label>
+                                <input className="input" value={editData.abhaId} onChange={e => handleEditChange('abhaId', e.target.value)} />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.ageGender')}</div>
+                                <div style={{ fontWeight: 500 }}>{patient.age} {t('patientProfile.yrs')} • {patient.gender}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.village')}</div>
+                                <div style={{ fontWeight: 500 }}>{patient.village}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.houseNo')}</div>
+                                <div style={{ fontWeight: 500 }}>{patient.houseNumber}</div>
+                            </div>
+                            <div>
+                                <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.familyId')}</div>
+                                <div style={{ fontWeight: 500 }}>{patient.familyId}</div>
+                            </div>
+                            {patient.abhaId && (
+                                <div>
+                                    <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.abhaId')}</div>
+                                    <div style={{ fontWeight: 500 }}>{patient.abhaId}</div>
+                                </div>
+                            )}
+                            {patient.contact && (
+                                <div>
+                                    <div className="text-muted" style={{ marginBottom: '2px' }}>{t('patientProfile.contact')}</div>
+                                    <div style={{ fontWeight: 500 }}>{patient.contact}</div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

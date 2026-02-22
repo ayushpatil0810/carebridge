@@ -9,6 +9,8 @@ import {
     getFollowUpsByUser,
     completeFollowUp,
     markReminderSent,
+    markMissedFollowUps,
+    rescheduleFollowUp,
     todayStr,
 } from '../../services/followUpService';
 import {
@@ -24,6 +26,7 @@ import {
     ExternalLink,
     MapPin,
     AlertCircle,
+    RefreshCw,
 } from 'lucide-react';
 
 export default function FollowUps() {
@@ -32,6 +35,8 @@ export default function FollowUps() {
     const [followUps, setFollowUps] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('today');
+    const [rescheduleId, setRescheduleId] = useState(null);
+    const [rescheduleDate, setRescheduleDate] = useState('');
 
     useEffect(() => {
         loadFollowUps();
@@ -40,6 +45,8 @@ export default function FollowUps() {
     const loadFollowUps = async () => {
         if (!user) return;
         try {
+            // Auto-mark overdue follow-ups as missed
+            await markMissedFollowUps(user.uid);
             const data = await getFollowUpsByUser(user.uid);
             setFollowUps(data);
         } catch (err) {
@@ -54,11 +61,20 @@ export default function FollowUps() {
     const dueToday = followUps.filter(f => f.followUpDate === today && f.status === 'pending');
     const upcoming = followUps.filter(f => f.followUpDate > today && f.status === 'pending');
     const completed = followUps.filter(f => f.status === 'completed');
+    const missed = followUps.filter(f => f.status === 'missed');
     const overdue = followUps.filter(f => f.followUpDate < today && f.status === 'pending');
 
     const handleComplete = async (id) => {
         await completeFollowUp(id);
         setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'completed' } : f));
+    };
+
+    const handleReschedule = async (id) => {
+        if (!rescheduleDate) return;
+        await rescheduleFollowUp(id, rescheduleDate);
+        setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'pending', followUpDate: rescheduleDate } : f));
+        setRescheduleId(null);
+        setRescheduleDate('');
     };
 
     const handleSendReminder = async (fu) => {
@@ -77,9 +93,9 @@ export default function FollowUps() {
         await markReminderSent(fu.id);
         setFollowUps(prev => prev.map(f => f.id === fu.id ? { ...f, reminderSent: true } : f));
 
-        // Open WhatsApp — in practice you'd need the patient's phone number from patient data
-        // For now, we log it and the ASHA worker can find the patient's number
-        window.open(getWhatsAppLink('', msg), '_blank');
+        // Open WhatsApp with patient's contact number if available
+        const phone = fu.patientContact || '';
+        window.open(getWhatsAppLink(phone, msg), '_blank');
     };
 
     const getItems = () => {
@@ -87,6 +103,7 @@ export default function FollowUps() {
             case 'today': return [...overdue, ...dueToday];
             case 'upcoming': return upcoming;
             case 'completed': return completed;
+            case 'missed': return missed;
             default: return [];
         }
     };
@@ -141,6 +158,15 @@ export default function FollowUps() {
                         <div className="stat-label">{t('followUp.completed')}</div>
                     </div>
                 </div>
+                <div className="stat-card">
+                    <div className="stat-icon" style={{ background: 'rgba(220,38,38,0.06)', color: '#DC2626' }}>
+                        <AlertCircle size={20} />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-value">{missed.length}</div>
+                        <div className="stat-label">{t('followUp.missed')}</div>
+                    </div>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -153,6 +179,9 @@ export default function FollowUps() {
                 </button>
                 <button className={`section-btn ${activeTab === 'completed' ? 'active' : ''}`} onClick={() => setActiveTab('completed')}>
                     {t('followUp.completed')} ({completed.length})
+                </button>
+                <button className={`section-btn ${activeTab === 'missed' ? 'active' : ''}`} onClick={() => setActiveTab('missed')}>
+                    {t('followUp.missed')} {missed.length > 0 && <span className="badge badge-red" style={{ marginLeft: '6px', fontSize: '0.65rem' }}>{missed.length}</span>}
                 </button>
             </div>
 
@@ -209,6 +238,25 @@ export default function FollowUps() {
                                     )}
                                     {fu.status === 'completed' && (
                                         <span className="status-badge approved" style={{ fontSize: '0.75rem' }}>✓ {t('followUp.completed')}</span>
+                                    )}
+                                    {fu.status === 'missed' && (
+                                        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, alignItems: 'center' }}>
+                                            <span className="badge badge-red" style={{ fontSize: '0.65rem' }}>{t('followUp.missed')}</span>
+                                            {rescheduleId === fu.id ? (
+                                                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                                    <input type="date" className="input" style={{ fontSize: '0.75rem', padding: '4px 8px', width: '140px' }}
+                                                        value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} min={today} />
+                                                    <button className="btn btn-sm btn-primary" onClick={() => handleReschedule(fu.id)} disabled={!rescheduleDate}>
+                                                        <CheckCircle2 size={13} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button className="btn btn-sm btn-secondary" onClick={() => { setRescheduleId(fu.id); setRescheduleDate(''); }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                    <RefreshCw size={13} /> {t('followUp.reschedule')}
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -26,7 +26,9 @@ import {
     Clock,
     Target,
     BarChart3,
+    Download,
 } from 'lucide-react';
+import { exportPerformanceCSV } from '../../utils/csvExport';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -149,6 +151,15 @@ export default function AdminPerformance() {
                 </button>
                 <button className={`admin-section-btn ${activeTab === 'phc' ? 'active' : ''}`} onClick={() => setActiveTab('phc')}>
                     <Building2 size={16} /> PHC Doctors
+                </button>
+                <button className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}
+                    onClick={() => exportPerformanceCSV(
+                        activeTab === 'asha'
+                            ? ashaMetrics.map(a => ({ ...a, avgResponseTimeFormatted: formatDuration(a.avgResponseTimeMs) }))
+                            : phcMetrics.map(p => ({ ...p, avgResponseTimeFormatted: formatDuration(p.avgResponseTimeMs) })),
+                        activeTab
+                    )}>
+                    <Download size={14} /> Export {activeTab === 'asha' ? 'ASHA' : 'PHC'} Data (CSV)
                 </button>
             </div>
 

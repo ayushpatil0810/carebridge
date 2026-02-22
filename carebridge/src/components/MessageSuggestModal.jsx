@@ -3,35 +3,50 @@
 // ============================================================
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { logMessage, getWhatsAppLink } from '../services/messageService';
+import { logMessage, getWhatsAppLink, getTemplateMessage } from '../services/messageService';
 import {
     Send,
     MessageSquare,
     X,
     CheckCircle2,
     ExternalLink,
+    Globe,
 } from 'lucide-react';
+
+const LANG_OPTIONS = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिन्दी' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+    { code: 'bn', label: 'বাংলা' },
+    { code: 'gu', label: 'ગુજરાતી' },
+];
 
 /**
  * Props:
  *   isOpen       — boolean
  *   onClose      — () => void
- *   template     — { label, message, messageMarathi, type }
+ *   template     — { label, messages, type }
  *   patient      — { patientId, name, phone, village }
  *   visitId      — string (linked visit)
  */
 export default function MessageSuggestModal({ isOpen, onClose, template, patient, visitId }) {
     const { user, userName } = useAuth();
-    const [messageText, setMessageText] = useState(template?.message || '');
-    const [useMarathi, setUseMarathi] = useState(false);
+    const { i18n } = useTranslation();
+    const [msgLang, setMsgLang] = useState(i18n.language?.split('-')[0] || 'en');
+    const [messageText, setMessageText] = useState(template ? getTemplateMessage(template, i18n.language?.split('-')[0] || 'en') : '');
     const [logging, setLogging] = useState(false);
     const [sent, setSent] = useState(false);
 
     if (!isOpen || !template) return null;
 
-    const currentMessage = useMarathi
-        ? (template.messageMarathi || template.message)
+    const currentMessage = msgLang !== 'en'
+        ? getTemplateMessage(template, msgLang)
         : messageText;
 
     const handleSendWhatsApp = async () => {
@@ -97,26 +112,24 @@ export default function MessageSuggestModal({ isOpen, onClose, template, patient
                                 )}
                             </div>
 
-                            {/* Language Toggle */}
-                            {template.messageMarathi && (
-                                <div className="msg-lang-toggle">
-                                    <button
-                                        className={`btn btn-sm ${!useMarathi ? 'btn-primary' : 'btn-secondary'}`}
-                                        onClick={() => { setUseMarathi(false); setMessageText(template.message); }}
-                                    >English</button>
-                                    <button
-                                        className={`btn btn-sm ${useMarathi ? 'btn-primary' : 'btn-secondary'}`}
-                                        onClick={() => setUseMarathi(true)}
-                                    >मराठी</button>
-                                </div>
-                            )}
+                            {/* Language Selector */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                                <Globe size={14} style={{ color: 'var(--text-muted)' }} />
+                                <select className="input" value={msgLang}
+                                    onChange={e => { setMsgLang(e.target.value); if (e.target.value === 'en') setMessageText(getTemplateMessage(template, 'en')); }}
+                                    style={{ width: 'auto', fontSize: '0.8rem', padding: '4px 10px' }}>
+                                    {LANG_OPTIONS.map(l => (
+                                        <option key={l.code} value={l.code}>{l.label}</option>
+                                    ))}
+                                </select>
+                            </div>
 
                             {/* Message preview/edit */}
                             <textarea
                                 className="form-input msg-textarea"
                                 value={currentMessage}
-                                onChange={e => { if (!useMarathi) setMessageText(e.target.value); }}
-                                readOnly={useMarathi}
+                                onChange={e => { if (msgLang === 'en') setMessageText(e.target.value); }}
+                                readOnly={msgLang !== 'en'}
                                 rows={4}
                             />
                         </div>

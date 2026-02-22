@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllPatients } from '../../services/patientService';
+import { getPatientsByUser } from '../../services/patientService';
 import {
     createMaternityRecord,
     getActiveMaternityRecord,
@@ -24,6 +24,7 @@ import {
     BABY_IMMUNIZATIONS,
     MATERNAL_DANGER_SIGNS,
     MODERATE_RISK_INDICATORS,
+    escalateMaternityToPHC,
 } from '../../services/maternityService';
 import {
     Baby,
@@ -47,7 +48,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 export default function MaternityTracker() {
-    const { userName } = useAuth();
+    const { user, userName } = useAuth();
     const { t } = useTranslation();
 
     // ── State ──
@@ -131,7 +132,7 @@ export default function MaternityTracker() {
 
     const loadPatients = async () => {
         try {
-            const all = await getAllPatients();
+            const all = await getPatientsByUser(user.uid);
             setPatients(all.filter(p => p.gender?.toLowerCase() === 'female'));
         } catch (err) {
             console.error('Error loading patients:', err);
@@ -281,9 +282,37 @@ export default function MaternityTracker() {
                 gestationalWeeks: ga.weeks,
                 recordedBy: userName,
             });
+
+            // Auto-escalate HIGH/MODERATE risk to PHC second-opinion queue
+            if (risk.escalate || risk.level === 'MODERATE') {
+                try {
+                    await escalateMaternityToPHC({
+                        patientId: selectedPatient.patientId || selectedPatient.id,
+                        patientDocId: selectedPatient.id,
+                        patientName: selectedPatient.name,
+                        patientAge: selectedPatient.age,
+                        patientGender: selectedPatient.gender || 'Female',
+                        patientVillage: selectedPatient.village,
+                        patientHouseNumber: selectedPatient.houseNumber || '',
+                        vitals,
+                        dangerSigns: ancForm.dangerSigns,
+                        riskLevel: risk.level,
+                        riskReasons: risk.reasons,
+                        gestationalWeeks: ga.weeks,
+                        visitType: 'ANC',
+                        createdBy: user?.uid || '',
+                        createdByName: userName || '',
+                    });
+                } catch (escErr) {
+                    console.error('Maternity escalation failed:', escErr);
+                }
+            }
+
             setSuccess(risk.escalate
-                ? '⚠️ HIGH RISK — ANC visit saved. Immediate PHC escalation recommended!'
-                : 'ANC visit recorded!');
+                ? '⚠️ HIGH RISK — ANC visit saved & automatically escalated to PHC for review!'
+                : risk.level === 'MODERATE'
+                    ? '⚠️ MODERATE RISK — ANC visit saved & sent to PHC for review.'
+                    : 'ANC visit recorded!');
             setShowANCForm(false);
             setANCForm({ visitNumber: 1, weight: '', bp: '', hemoglobin: '', urineTest: 'Normal', fundalHeight: '', fetalHeartRate: '', ttDose: false, ifaTablets: false, notes: '', bpSystolic: '', bpDiastolic: '', pulse: '', respiratoryRate: '', temperature: '', spo2: '', dangerSigns: [], moderateRisks: [] });
             await loadMaternityData(selectedPatient.id);

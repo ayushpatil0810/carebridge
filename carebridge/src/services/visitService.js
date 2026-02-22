@@ -15,10 +15,10 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
-} from 'firebase/firestore';
-import { db } from '../firebase';
+} from "firebase/firestore";
+import { db } from "../firebase";
 
-const COLLECTION = 'visits';
+const COLLECTION = "visits";
 
 /**
  * Create a new visit record
@@ -27,13 +27,13 @@ export async function createVisit(data) {
   const visit = {
     patientId: data.patientId,
     patientDocId: data.patientDocId,
-    patientName: data.patientName || '',
-    patientAge: data.patientAge || '',
-    patientGender: data.patientGender || '',
-    patientVillage: data.patientVillage || '',
-    patientHouseNumber: data.patientHouseNumber || '',
+    patientName: data.patientName || "",
+    patientAge: data.patientAge || "",
+    patientGender: data.patientGender || "",
+    patientVillage: data.patientVillage || "",
+    patientHouseNumber: data.patientHouseNumber || "",
     chiefComplaint: data.chiefComplaint,
-    symptomDuration: data.symptomDuration || '',
+    symptomDuration: data.symptomDuration || "",
     vitals: {
       respiratoryRate: data.vitals.respiratoryRate || null,
       pulseRate: data.vitals.pulseRate || null,
@@ -41,28 +41,28 @@ export async function createVisit(data) {
       spo2: data.vitals.spo2 || null,
       systolicBP: data.vitals.systolicBP || null,
     },
-    consciousness: data.consciousness || 'Alert',
+    consciousness: data.consciousness || "Alert",
     redFlags: data.redFlags || [],
     news2Score: data.news2Score ?? null,
     news2Breakdown: data.news2Breakdown || [],
-    riskLevel: data.riskLevel || '',
-    advisory: data.advisory || '',
-    status: 'Completed',
-    doctorNote: '',
+    riskLevel: data.riskLevel || "",
+    advisory: data.advisory || "",
+    status: "Completed",
+    doctorNote: "",
     emergencyFlag: false,
     createdAt: serverTimestamp(),
-    createdBy: data.createdBy || '',
-    createdByName: data.createdByName || '',
+    createdBy: data.createdBy || "",
+    createdByName: data.createdByName || "",
     reviewedAt: null,
-    reviewedBy: '',
+    reviewedBy: "",
     reviewRequestedAt: null,
     // Monitoring fields
     monitoringPeriod: null,
     monitoringStartedAt: null,
-    recheckInstruction: '',
+    recheckInstruction: "",
     // Clarification fields
-    clarificationMessage: '',
-    clarificationResponse: '',
+    clarificationMessage: "",
+    clarificationResponse: "",
     clarificationRequestedAt: null,
     clarificationRespondedAt: null,
     // Audit
@@ -80,26 +80,28 @@ export async function createVisit(data) {
 export async function getVisitsByPatient(patientDocId) {
   const q = query(
     collection(db, COLLECTION),
-    where('patientDocId', '==', patientDocId),
-    orderBy('createdAt', 'desc')
+    where("patientDocId", "==", patientDocId),
+    orderBy("createdAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
  * Get recent visits for a patient within the last N hours (default 48)
  */
 export async function getRecentVisitsByPatient(patientDocId, hoursAgo = 48) {
-  const cutoff = Timestamp.fromDate(new Date(Date.now() - hoursAgo * 60 * 60 * 1000));
+  const cutoff = Timestamp.fromDate(
+    new Date(Date.now() - hoursAgo * 60 * 60 * 1000),
+  );
   const q = query(
     collection(db, COLLECTION),
-    where('patientDocId', '==', patientDocId),
-    where('createdAt', '>=', cutoff),
-    orderBy('createdAt', 'desc')
+    where("patientDocId", "==", patientDocId),
+    where("createdAt", ">=", cutoff),
+    orderBy("createdAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
@@ -115,12 +117,19 @@ export async function getVisitById(docId) {
 /**
  * Request PHC review for a visit
  */
-export async function requestPHCReview(visitId, isEmergency = false, escalationContext = []) {
+export async function requestPHCReview(
+  visitId,
+  isEmergency = false,
+  escalationContext = [],
+) {
   const docRef = doc(db, COLLECTION, visitId);
   await updateDoc(docRef, {
-    status: 'Pending PHC Review',
+    status: "Pending PHC Review",
     emergencyFlag: isEmergency,
-    escalationContext: escalationContext.length > 0 ? escalationContext : ['Clinical assessment'],
+    escalationContext:
+      escalationContext.length > 0
+        ? escalationContext
+        : ["Clinical assessment"],
     reviewRequestedAt: serverTimestamp(),
   });
 }
@@ -146,48 +155,50 @@ export async function submitDoctorReview(visitId, reviewData) {
 
   // Build audit entry with full justification logging
   const auditEntry = {
-    action: reviewData.action || 'Reviewed',
-    by: reviewData.reviewedBy || '',
-    note: reviewData.doctorNote || '',
+    action: reviewData.action || "Reviewed",
+    by: reviewData.reviewedBy || "",
+    note: reviewData.doctorNote || "",
     timestamp: now.toISOString(),
     responseTimeMs,
     news2Score: visitData?.news2Score ?? null,
-    riskLevel: visitData?.riskLevel || '',
+    riskLevel: visitData?.riskLevel || "",
     redFlags: visitData?.redFlags || [],
     escalationContext: visitData?.escalationContext || [],
   };
 
   // Add decision-specific fields to audit
-  if (reviewData.referralReason) auditEntry.referralReason = reviewData.referralReason;
-  if (reviewData.clarificationType) auditEntry.clarificationType = reviewData.clarificationType;
+  if (reviewData.referralReason)
+    auditEntry.referralReason = reviewData.referralReason;
+  if (reviewData.clarificationType)
+    auditEntry.clarificationType = reviewData.clarificationType;
 
   const existingTrail = visitData?.auditTrail || [];
 
   const updateData = {
-    status: reviewData.action || 'Reviewed',
-    doctorNote: reviewData.doctorNote || '',
-    reviewedBy: reviewData.reviewedBy || '',
+    status: reviewData.action || "Reviewed",
+    doctorNote: reviewData.doctorNote || "",
+    reviewedBy: reviewData.reviewedBy || "",
     reviewedAt: serverTimestamp(),
     responseTimeMs,
     auditTrail: [...existingTrail, auditEntry],
   };
 
   // Referral-specific fields
-  if (reviewData.action === 'Referral Approved') {
-    updateData.referralReason = reviewData.referralReason || '';
+  if (reviewData.action === "Referral Approved") {
+    updateData.referralReason = reviewData.referralReason || "";
   }
 
   // Monitoring-specific fields
-  if (reviewData.action === 'Under Monitoring') {
-    updateData.monitoringPeriod = reviewData.monitoringPeriod || '24h';
+  if (reviewData.action === "Under Monitoring") {
+    updateData.monitoringPeriod = reviewData.monitoringPeriod || "24h";
     updateData.monitoringStartedAt = serverTimestamp();
-    updateData.recheckInstruction = reviewData.recheckInstruction || '';
+    updateData.recheckInstruction = reviewData.recheckInstruction || "";
   }
 
   // Clarification-specific fields
-  if (reviewData.action === 'Awaiting ASHA Response') {
-    updateData.clarificationMessage = reviewData.clarificationMessage || '';
-    updateData.clarificationType = reviewData.clarificationType || '';
+  if (reviewData.action === "Awaiting ASHA Response") {
+    updateData.clarificationMessage = reviewData.clarificationMessage || "";
+    updateData.clarificationType = reviewData.clarificationType || "";
     updateData.clarificationRequestedAt = serverTimestamp();
   }
 
@@ -204,15 +215,15 @@ export async function respondToClarification(visitId, response) {
   const existingTrail = visitData?.auditTrail || [];
 
   const auditEntry = {
-    action: 'Clarification Responded',
-    by: response.respondedBy || '',
-    note: response.responseText || '',
+    action: "Clarification Responded",
+    by: response.respondedBy || "",
+    note: response.responseText || "",
     timestamp: new Date().toISOString(),
   };
 
   await updateDoc(docRef, {
-    status: 'Pending PHC Review',
-    clarificationResponse: response.responseText || '',
+    status: "Pending PHC Review",
+    clarificationResponse: response.responseText || "",
     clarificationRespondedAt: serverTimestamp(),
     auditTrail: [...existingTrail, auditEntry],
   });
@@ -224,11 +235,11 @@ export async function respondToClarification(visitId, response) {
 export async function getPendingReviews() {
   const q = query(
     collection(db, COLLECTION),
-    where('status', '==', 'Pending PHC Review'),
-    orderBy('createdAt', 'desc')
+    where("status", "==", "Pending PHC Review"),
+    orderBy("createdAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
@@ -237,33 +248,60 @@ export async function getPendingReviews() {
 export async function getMonitoringCases() {
   const q = query(
     collection(db, COLLECTION),
-    where('status', '==', 'Under Monitoring'),
-    orderBy('monitoringStartedAt', 'desc')
+    where("status", "==", "Under Monitoring"),
+    orderBy("monitoringStartedAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
- * Get cases awaiting ASHA response (for ASHA dashboard)
+ * Get cases awaiting ASHA response (admin/PHC — no user filter)
  */
 export async function getClarificationCases() {
   const q = query(
     collection(db, COLLECTION),
-    where('status', '==', 'Awaiting ASHA Response'),
-    orderBy('clarificationRequestedAt', 'desc')
+    where("status", "==", "Awaiting ASHA Response"),
+    orderBy("clarificationRequestedAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
- * Get all visits (for dashboard)
+ * Get clarification cases for a specific ASHA worker
+ */
+export async function getClarificationCasesByUser(userId) {
+  const q = query(
+    collection(db, COLLECTION),
+    where("createdBy", "==", userId),
+    where("status", "==", "Awaiting ASHA Response"),
+    orderBy("clarificationRequestedAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Get all visits (admin/PHC — no user filter)
  */
 export async function getAllVisits() {
-  const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+  const q = query(collection(db, COLLECTION), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Get visits created by a specific ASHA worker
+ */
+export async function getVisitsByUser(userId) {
+  const q = query(
+    collection(db, COLLECTION),
+    where("createdBy", "==", userId),
+    orderBy("createdAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /**
@@ -275,11 +313,11 @@ export async function getTodayVisits() {
 
   const q = query(
     collection(db, COLLECTION),
-    where('createdAt', '>=', today),
-    orderBy('createdAt', 'desc')
+    where("createdAt", ">=", today),
+    orderBy("createdAt", "desc"),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 // ---- Utility Functions ----
@@ -295,12 +333,13 @@ export async function getTodayVisits() {
 export function sortByPriority(visits) {
   // Pre-compute repeat escalation counts
   const patientEscalationCount = {};
-  visits.forEach(v => {
+  visits.forEach((v) => {
     const pid = v.patientId || v.patientDocId;
-    if (pid) patientEscalationCount[pid] = (patientEscalationCount[pid] || 0) + 1;
+    if (pid)
+      patientEscalationCount[pid] = (patientEscalationCount[pid] || 0) + 1;
   });
 
-  const riskOrder = { Red: 0, Yellow: 1, Green: 2, '': 3 };
+  const riskOrder = { Red: 0, Yellow: 1, Green: 2, "": 3 };
   return [...visits].sort((a, b) => {
     // 1. Emergency first
     if (a.emergencyFlag && !b.emergencyFlag) return -1;
@@ -316,11 +355,14 @@ export function sortByPriority(visits) {
     const bRepeat = (patientEscalationCount[bPid] || 0) > 1 ? 1 : 0;
     if (aRepeat !== bRepeat) return bRepeat - aRepeat;
     // 4. Risk level
-    const riskDiff = (riskOrder[a.riskLevel] ?? 3) - (riskOrder[b.riskLevel] ?? 3);
+    const riskDiff =
+      (riskOrder[a.riskLevel] ?? 3) - (riskOrder[b.riskLevel] ?? 3);
     if (riskDiff !== 0) return riskDiff;
     // 5. Oldest first (longest waiting)
-    const aTime = a.reviewRequestedAt?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
-    const bTime = b.reviewRequestedAt?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
+    const aTime =
+      a.reviewRequestedAt?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
+    const bTime =
+      b.reviewRequestedAt?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
     return aTime - bTime;
   });
 }
@@ -332,7 +374,7 @@ export function calculateASHAStats(visits) {
   const stats = {};
 
   visits.forEach((v) => {
-    const ashaName = v.createdByName || v.createdBy || 'Unknown';
+    const ashaName = v.createdByName || v.createdBy || "Unknown";
     if (!stats[ashaName]) {
       stats[ashaName] = {
         name: ashaName,
@@ -344,8 +386,12 @@ export function calculateASHAStats(visits) {
       };
     }
     stats[ashaName].totalCases++;
-    if (v.status === 'Referral Approved') stats[ashaName].approvedReferrals++;
-    if (v.reviewedAt || v.status === 'Reviewed' || v.status === 'Referral Approved') {
+    if (v.status === "Referral Approved") stats[ashaName].approvedReferrals++;
+    if (
+      v.reviewedAt ||
+      v.status === "Reviewed" ||
+      v.status === "Referral Approved"
+    ) {
       stats[ashaName].reviewedCases++;
     }
     if (v.responseTimeMs) {
@@ -356,12 +402,14 @@ export function calculateASHAStats(visits) {
 
   return Object.values(stats).map((s) => ({
     ...s,
-    avgResponseTimeMs: s.responseTimeCount > 0
-      ? Math.round(s.totalResponseTimeMs / s.responseTimeCount)
-      : null,
-    approvalRate: s.reviewedCases > 0
-      ? Math.round((s.approvedReferrals / s.reviewedCases) * 100)
-      : 0,
+    avgResponseTimeMs:
+      s.responseTimeCount > 0
+        ? Math.round(s.totalResponseTimeMs / s.responseTimeCount)
+        : null,
+    approvalRate:
+      s.reviewedCases > 0
+        ? Math.round((s.approvedReferrals / s.reviewedCases) * 100)
+        : 0,
   }));
 }
 
@@ -369,21 +417,27 @@ export function calculateASHAStats(visits) {
  * Get unique villages from visits
  */
 export function getUniqueVillages(visits) {
-  return [...new Set(visits.map(v => v.patientVillage).filter(Boolean))].sort();
+  return [
+    ...new Set(visits.map((v) => v.patientVillage).filter(Boolean)),
+  ].sort();
 }
 
 /**
  * Get unique ASHA worker names from visits
  */
 export function getUniqueASHANames(visits) {
-  return [...new Set(visits.map(v => v.createdByName || v.createdBy).filter(Boolean))].sort();
+  return [
+    ...new Set(
+      visits.map((v) => v.createdByName || v.createdBy).filter(Boolean),
+    ),
+  ].sort();
 }
 
 /**
  * Format milliseconds to human-readable duration
  */
 export function formatDuration(ms) {
-  if (!ms) return '—';
+  if (!ms) return "—";
   const minutes = Math.floor(ms / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
@@ -396,7 +450,7 @@ export function formatDuration(ms) {
  * Time since a timestamp (for queue display)
  */
 export function timeSince(timestamp) {
-  if (!timestamp) return '—';
+  if (!timestamp) return "—";
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   const ms = Date.now() - date.getTime();
   return formatDuration(ms);

@@ -3,114 +3,199 @@
 // ============================================================
 
 import {
-    collection,
-    doc,
-    addDoc,
-    getDoc,
-    getDocs,
-    query,
-    where,
-    orderBy,
-    serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '../firebase';
+  collection,
+  doc,
+  addDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
 
-const COLLECTION = 'patients';
+const COLLECTION = "patients";
 
 /**
  * Generate a simple family ID from house number + village
  */
 function generateFamilyId(houseNumber, village) {
-    const houseClean = String(houseNumber).trim().toLowerCase().replace(/\s+/g, '');
-    const villageClean = String(village).trim().toLowerCase().replace(/\s+/g, '');
-    return `FAM-${villageClean}-${houseClean}`;
+  const houseClean = String(houseNumber)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  const villageClean = String(village).trim().toLowerCase().replace(/\s+/g, "");
+  return `FAM-${villageClean}-${houseClean}`;
 }
 
 /**
  * Generate a short patient ID
  */
 function generatePatientId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let id = 'PAT-';
-    for (let i = 0; i < 8; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "PAT-";
+  for (let i = 0; i < 8; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return id;
 }
 
 /**
  * Register a new patient
  */
 export async function registerPatient(data) {
-    const patientId = generatePatientId();
-    const familyId = generateFamilyId(data.houseNumber, data.village);
+  const patientId = generatePatientId();
+  const familyId = generateFamilyId(data.houseNumber, data.village);
 
-    const patient = {
-        patientId,
-        name: data.name,
-        age: Number(data.age),
-        gender: data.gender,
-        houseNumber: data.houseNumber,
-        village: data.village,
-        familyId,
-        abhaId: data.abhaId || '',
-        abhaLinked: Boolean(data.abhaId && data.abhaId.trim()),
-        contact: data.contact || '',
-        createdAt: serverTimestamp(),
-        createdBy: data.createdBy || '',
-    };
+  const patient = {
+    patientId,
+    name: data.name,
+    age: Number(data.age),
+    gender: data.gender,
+    houseNumber: data.houseNumber,
+    village: data.village,
+    familyId,
+    abhaId: data.abhaId || "",
+    abhaLinked: Boolean(data.abhaId && data.abhaId.trim()),
+    contact: data.contact || "",
+    createdAt: serverTimestamp(),
+    createdBy: data.createdBy || "",
+  };
 
-    const docRef = await addDoc(collection(db, COLLECTION), patient);
-    return { id: docRef.id, ...patient };
+  const docRef = await addDoc(collection(db, COLLECTION), patient);
+  return { id: docRef.id, ...patient };
 }
 
 /**
  * Get a patient by Firestore document ID
  */
 export async function getPatientById(docId) {
-    const docRef = doc(db, COLLECTION, docId);
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() };
+  const docRef = doc(db, COLLECTION, docId);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() };
 }
 
 /**
- * Search patients by various fields
+ * Search patients by various fields.
+ * If userId is provided, results are scoped to that ASHA worker's patients.
  */
-export async function searchPatients(searchTerm, searchField = 'name') {
-    let q;
+export async function searchPatients(
+  searchTerm,
+  searchField = "name",
+  userId = null,
+) {
+  const filters = [];
+  if (userId) filters.push(where("createdBy", "==", userId));
 
-    if (searchField === 'name') {
-        // Firestore doesn't support native full-text search,
-        // so we fetch all and filter client-side for name search
-        q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
-    } else if (searchField === 'patientId') {
-        q = query(collection(db, COLLECTION), where('patientId', '==', searchTerm));
-    } else if (searchField === 'houseNumber') {
-        q = query(collection(db, COLLECTION), where('houseNumber', '==', searchTerm));
-    } else if (searchField === 'familyId') {
-        q = query(collection(db, COLLECTION), where('familyId', '==', searchTerm.toLowerCase()));
-    } else {
-        q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
-    }
+  let q;
 
-    const snapshot = await getDocs(q);
-    let results = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (searchField === "name") {
+    q = query(
+      collection(db, COLLECTION),
+      ...filters,
+      orderBy("createdAt", "desc"),
+    );
+  } else if (searchField === "patientId") {
+    q = query(
+      collection(db, COLLECTION),
+      ...filters,
+      where("patientId", "==", searchTerm),
+    );
+  } else if (searchField === "houseNumber") {
+    q = query(
+      collection(db, COLLECTION),
+      ...filters,
+      where("houseNumber", "==", searchTerm),
+    );
+  } else if (searchField === "familyId") {
+    q = query(
+      collection(db, COLLECTION),
+      ...filters,
+      where("familyId", "==", searchTerm.toLowerCase()),
+    );
+  } else {
+    q = query(
+      collection(db, COLLECTION),
+      ...filters,
+      orderBy("createdAt", "desc"),
+    );
+  }
 
-    // Client-side name filtering
-    if (searchField === 'name' && searchTerm) {
-        const term = searchTerm.toLowerCase();
-        results = results.filter(p => p.name.toLowerCase().includes(term));
-    }
+  const snapshot = await getDocs(q);
+  let results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    return results;
+  // Client-side name filtering
+  if (searchField === "name" && searchTerm) {
+    const term = searchTerm.toLowerCase();
+    results = results.filter((p) => p.name.toLowerCase().includes(term));
+  }
+
+  return results;
 }
 
 /**
- * Get all patients (for dashboard counts)
+ * Update an existing patient's demographic data
+ */
+export async function updatePatient(docId, data) {
+  const docRef = doc(db, COLLECTION, docId);
+  const updates = {};
+
+  const editable = [
+    "name",
+    "age",
+    "gender",
+    "houseNumber",
+    "village",
+    "contact",
+    "abhaId",
+  ];
+  for (const field of editable) {
+    if (data[field] !== undefined) {
+      updates[field] = field === "age" ? Number(data[field]) : data[field];
+    }
+  }
+
+  // Recompute derived fields
+  if (updates.houseNumber || updates.village) {
+    const snap = await getDoc(docRef);
+    const existing = snap.data();
+    updates.familyId = generateFamilyId(
+      updates.houseNumber || existing.houseNumber,
+      updates.village || existing.village,
+    );
+  }
+  if (updates.abhaId !== undefined) {
+    updates.abhaLinked = Boolean(
+      updates.abhaId && String(updates.abhaId).trim(),
+    );
+  }
+
+  updates.updatedAt = serverTimestamp();
+  await updateDoc(docRef, updates);
+  return { id: docId, ...updates };
+}
+
+/**
+ * Get all patients (admin / PHC — no user filter)
  */
 export async function getAllPatients() {
-    const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  const q = query(collection(db, COLLECTION), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Get patients registered by a specific ASHA worker
+ */
+export async function getPatientsByUser(userId) {
+  const q = query(
+    collection(db, COLLECTION),
+    where("createdBy", "==", userId),
+    orderBy("createdAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }

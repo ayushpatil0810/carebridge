@@ -45,7 +45,9 @@ import {
     Eye,
     RefreshCw,
     TrendingUp,
+    Download,
 } from 'lucide-react';
+import { exportVisitsCSV, exportVillageCaseLoadCSV } from '../../utils/csvExport';
 
 // Register Chart.js modules
 ChartJS.register(
@@ -275,6 +277,18 @@ export default function AdminDashboard() {
                         </button>
                     );
                 })}
+            </div>
+
+            {/* Export Bar */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => exportVisitsCSV(visits)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                    <Download size={14} /> Export All Visits (CSV)
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => exportVillageCaseLoadCSV(villageCaseLoad)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                    <Download size={14} /> Export Village Data (CSV)
+                </button>
             </div>
 
             {/* ───── OVERVIEW SECTION ───── */}

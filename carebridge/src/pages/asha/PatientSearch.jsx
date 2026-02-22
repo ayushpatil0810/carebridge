@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { searchPatients } from '../../services/patientService';
 import { useTranslation } from 'react-i18next';
 import { Search, Home, MapPin } from 'lucide-react';
@@ -15,6 +16,7 @@ export default function PatientSearch() {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { t } = useTranslation();
 
     const handleSearch = async (e) => {
@@ -24,7 +26,7 @@ export default function PatientSearch() {
         setLoading(true);
         setSearched(true);
         try {
-            const data = await searchPatients(searchTerm.trim(), searchField);
+            const data = await searchPatients(searchTerm.trim(), searchField, user.uid);
             setResults(data);
         } catch (err) {
             console.error('Error searching patients:', err);

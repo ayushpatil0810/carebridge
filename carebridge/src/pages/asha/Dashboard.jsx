@@ -4,8 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllVisits, getClarificationCases } from '../../services/visitService';
-import { getAllDueVaccinations } from '../../services/vaccinationService';
+import { useAuth } from '../../contexts/AuthContext';
+import { getVisitsByUser, getClarificationCasesByUser } from '../../services/visitService';
+import { getDueVaccinationsByUser } from '../../services/vaccinationService';
 import {
     ClipboardList,
     AlertCircle,
@@ -26,18 +27,19 @@ export default function Dashboard() {
     const [dueVaccines, setDueVaccines] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { t } = useTranslation();
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (user) loadData();
+    }, [user]);
 
     const loadData = async () => {
         try {
             const [allVisits, clarCases, dueVax] = await Promise.all([
-                getAllVisits(),
-                getClarificationCases(),
-                getAllDueVaccinations(),
+                getVisitsByUser(user.uid),
+                getClarificationCasesByUser(user.uid),
+                getDueVaccinationsByUser(user.uid),
             ]);
             setVisits(allVisits);
             setClarifications(clarCases);

@@ -8,9 +8,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPatientById } from '../../services/patientService';
 import { createVisit, requestPHCReview, getRecentVisitsByPatient } from '../../services/visitService';
 import { calculateNEWS2, getRiskAdvisory, RED_FLAGS } from '../../utils/news2';
+import { validateVital, validateAllVitals } from '../../utils/vitalsValidation';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import { scheduleFollowUp } from '../../services/followUpService';
 import MessageSuggestModal from '../../components/MessageSuggestModal';
+import { getAIClinicalAdvisory, isAIAdvisoryAvailable } from '../../services/aiAdvisoryService';
 import {
     Calculator,
     Save,
@@ -36,6 +38,12 @@ import {
     RotateCcw,
     HelpCircle,
     Zap,
+    BrainCircuit,
+    Sparkles,
+    Loader2,
+    ShieldQuestion,
+    Lightbulb,
+    ArrowRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -93,6 +101,16 @@ export default function VisitEntry() {
     // Repeat visit alert
     const [recentVisits, setRecentVisits] = useState([]);
 
+    // Vitals validation
+    const [vitalWarnings, setVitalWarnings] = useState({});
+    const [vitalErrors, setVitalErrors] = useState({});
+
+    // AI Advisory
+    const [aiAdvisory, setAiAdvisory] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState('');
+    const [aiExpanded, setAiExpanded] = useState(true);
+
     // Escalation context
     const ESCALATION_REASONS = [
         { key: 'high_news2', label: t('visitEntry.highNEWS2Score'), icon: Zap },
@@ -111,6 +129,12 @@ export default function VisitEntry() {
     const loadPatient = async () => {
         try {
             const p = await getPatientById(id);
+            // Ownership guard — ASHA can only create visits for their own patients
+            if (p && user && p.createdBy !== user.uid) {
+                setPatient(null);
+                setLoading(false);
+                return;
+            }
             setPatient(p);
         } catch (err) {
             console.error('Error loading patient:', err);
@@ -130,6 +154,20 @@ export default function VisitEntry() {
 
     const handleVitalChange = (field, value) => {
         setVitals({ ...vitals, [field]: value });
+        // Real-time validation
+        const result = validateVital(field, value);
+        setVitalErrors(prev => {
+            const next = { ...prev };
+            if (!result.valid && result.error) next[field] = result.error;
+            else delete next[field];
+            return next;
+        });
+        setVitalWarnings(prev => {
+            const next = { ...prev };
+            if (result.warning) next[field] = result.warning;
+            else delete next[field];
+            return next;
+        });
     };
 
     const handleRedFlagToggle = (flag) => {
@@ -139,6 +177,17 @@ export default function VisitEntry() {
     };
 
     const handleCalculateNEWS2 = () => {
+        // Block calculation if there are validation errors
+        const validation = validateAllVitals(vitals);
+        if (!validation.valid) {
+            const errObj = {};
+            validation.errors.forEach(e => {
+                const field = Object.keys(vitals).find(k => e.includes(k) || e.toLowerCase().includes(k.toLowerCase()));
+                if (field) errObj[field] = e;
+            });
+            setVitalErrors(prev => ({ ...prev, ...errObj }));
+            return;
+        }
         const result = calculateNEWS2(vitals, consciousness, redFlags);
         setNews2Result(result);
         setAdvisory(getRiskAdvisory(result.riskLevel));
@@ -201,6 +250,7 @@ export default function VisitEntry() {
                 patientId: patient.patientId,
                 patientName: patient.name,
                 patientVillage: patient.village,
+                patientContact: patient.contact || '',
                 visitId: savedVisitId,
                 followUpDate,
                 followUpTime,
@@ -213,6 +263,38 @@ export default function VisitEntry() {
             console.error('Error scheduling follow-up:', err);
         } finally {
             setSchedulingFollowUp(false);
+        }
+    };
+
+    // AI Advisory handler
+    const handleGetAIAdvisory = async () => {
+        if (!patient || !news2Result) return;
+        setAiLoading(true);
+        setAiError('');
+        setAiAdvisory(null);
+        try {
+            const result = await getAIClinicalAdvisory({
+                patient,
+                vitals,
+                chiefComplaint,
+                symptomDuration,
+                consciousness,
+                redFlags,
+                news2Score: news2Result.totalScore,
+                riskLevel: news2Result.riskLevel,
+            });
+            setAiAdvisory(result);
+        } catch (err) {
+            if (err.message === 'GEMINI_API_KEY_MISSING') {
+                setAiError(t('aiAdvisory.apiKeyMissing', 'Gemini API key not configured. Add VITE_GEMINI_API_KEY to your .env file.'));
+            } else if (err.message === 'GEMINI_RATE_LIMITED') {
+                setAiError(t('aiAdvisory.rateLimited', 'API rate limit reached. Please wait a minute and try again.'));
+            } else {
+                setAiError(t('aiAdvisory.requestFailed', 'AI advisory request failed. Please try again.'));
+            }
+            console.error('AI Advisory error:', err);
+        } finally {
+            setAiLoading(false);
         }
     };
 
@@ -315,7 +397,10 @@ export default function VisitEntry() {
                             value={vitals.respiratoryRate}
                             onChange={(e) => handleVitalChange('respiratoryRate', e.target.value)}
                             placeholder="breaths/min"
+                            style={vitalErrors.respiratoryRate ? { borderColor: 'var(--red)' } : vitalWarnings.respiratoryRate ? { borderColor: 'var(--yellow)' } : {}}
                         />
+                        {vitalErrors.respiratoryRate && <div className="form-error">{vitalErrors.respiratoryRate}</div>}
+                        {vitalWarnings.respiratoryRate && <div className="form-hint" style={{ color: 'var(--yellow-dark)' }}>⚠ {vitalWarnings.respiratoryRate}</div>}
                     </div>
 
                     <div className="form-group">
@@ -326,7 +411,10 @@ export default function VisitEntry() {
                             value={vitals.pulseRate}
                             onChange={(e) => handleVitalChange('pulseRate', e.target.value)}
                             placeholder="bpm"
+                            style={vitalErrors.pulseRate ? { borderColor: 'var(--red)' } : vitalWarnings.pulseRate ? { borderColor: 'var(--yellow)' } : {}}
                         />
+                        {vitalErrors.pulseRate && <div className="form-error">{vitalErrors.pulseRate}</div>}
+                        {vitalWarnings.pulseRate && <div className="form-hint" style={{ color: 'var(--yellow-dark)' }}>⚠ {vitalWarnings.pulseRate}</div>}
                     </div>
 
                     <div className="form-group">
@@ -338,7 +426,10 @@ export default function VisitEntry() {
                             value={vitals.temperature}
                             onChange={(e) => handleVitalChange('temperature', e.target.value)}
                             placeholder="°C"
+                            style={vitalErrors.temperature ? { borderColor: 'var(--red)' } : vitalWarnings.temperature ? { borderColor: 'var(--yellow)' } : {}}
                         />
+                        {vitalErrors.temperature && <div className="form-error">{vitalErrors.temperature}</div>}
+                        {vitalWarnings.temperature && <div className="form-hint" style={{ color: 'var(--yellow-dark)' }}>⚠ {vitalWarnings.temperature}</div>}
                     </div>
                 </div>
 
@@ -354,7 +445,10 @@ export default function VisitEntry() {
                             value={vitals.spo2}
                             onChange={(e) => handleVitalChange('spo2', e.target.value)}
                             placeholder="%"
+                            style={vitalErrors.spo2 ? { borderColor: 'var(--red)' } : vitalWarnings.spo2 ? { borderColor: 'var(--yellow)' } : {}}
                         />
+                        {vitalErrors.spo2 && <div className="form-error">{vitalErrors.spo2}</div>}
+                        {vitalWarnings.spo2 && <div className="form-hint" style={{ color: 'var(--yellow-dark)' }}>⚠ {vitalWarnings.spo2}</div>}
                     </div>
 
                     <div className="form-group">
@@ -368,7 +462,10 @@ export default function VisitEntry() {
                             value={vitals.systolicBP}
                             onChange={(e) => handleVitalChange('systolicBP', e.target.value)}
                             placeholder="mmHg"
+                            style={vitalErrors.systolicBP ? { borderColor: 'var(--red)' } : vitalWarnings.systolicBP ? { borderColor: 'var(--yellow)' } : {}}
                         />
+                        {vitalErrors.systolicBP && <div className="form-error">{vitalErrors.systolicBP}</div>}
+                        {vitalWarnings.systolicBP && <div className="form-hint" style={{ color: 'var(--yellow-dark)' }}>⚠ {vitalWarnings.systolicBP}</div>}
                     </div>
                 </div>
 
@@ -578,6 +675,190 @@ export default function VisitEntry() {
                             </div>
                         </div>
                     )}
+
+                    {/* ═══ AI Clinical Advisory Card ═══ */}
+                    <div className="card" style={{ marginBottom: '1.5rem', border: '1px solid var(--accent-indigo)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, var(--accent-indigo), #6366f1)',
+                                color: '#fff',
+                                padding: '0.85rem 1.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                cursor: 'pointer',
+                            }}
+                            onClick={() => setAiExpanded(e => !e)}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <BrainCircuit size={20} />
+                                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{t('aiAdvisory.title', 'AI Clinical Advisory')}</span>
+                                <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '99px' }}>Gemini</span>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{aiExpanded ? '▲' : '▼'}</span>
+                        </div>
+
+                        {aiExpanded && (
+                            <div style={{ padding: '1.25rem' }}>
+                                {/* Not yet requested */}
+                                {!aiAdvisory && !aiLoading && !aiError && (
+                                    <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+                                        <Sparkles size={32} color="var(--accent-indigo)" style={{ marginBottom: '0.5rem' }} />
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                            {t('aiAdvisory.description', 'Get AI-powered differential diagnosis suggestions and risk factors based on the patient\'s vitals and complaint.')}
+                                        </p>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleGetAIAdvisory}
+                                            disabled={!isAIAdvisoryAvailable()}
+                                            style={{ background: 'var(--accent-indigo)' }}
+                                        >
+                                            <BrainCircuit size={16} /> {t('aiAdvisory.getAdvisory', 'Get AI Advisory')}
+                                        </button>
+                                        {!isAIAdvisoryAvailable() && (
+                                            <p className="form-hint" style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                                                {t('aiAdvisory.apiKeyMissing', 'Gemini API key not configured. Add VITE_GEMINI_API_KEY to .env file.')}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Loading */}
+                                {aiLoading && (
+                                    <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                        <Loader2 size={32} color="var(--accent-indigo)" className="spin" style={{ animation: 'spin 1s linear infinite', marginBottom: '0.75rem' }} />
+                                        <p style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{t('aiAdvisory.analyzing', 'Analyzing clinical data...')}</p>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('aiAdvisory.aiProcessing', 'AI is reviewing vitals, symptoms, and risk factors')}</p>
+                                    </div>
+                                )}
+
+                                {/* Error */}
+                                {aiError && (
+                                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                        <AlertTriangle size={28} color="var(--alert-red)" style={{ marginBottom: '0.5rem' }} />
+                                        <p style={{ color: 'var(--alert-red)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{aiError}</p>
+                                        <button className="btn btn-secondary btn-sm" onClick={handleGetAIAdvisory}>
+                                            <RotateCcw size={14} /> {t('aiAdvisory.retry', 'Retry')}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Results */}
+                                {aiAdvisory && (
+                                    <div>
+                                        {/* Overall Assessment */}
+                                        <div style={{
+                                            background: 'var(--bg-secondary)',
+                                            borderRadius: 'var(--radius)',
+                                            padding: '0.75rem 1rem',
+                                            marginBottom: '1rem',
+                                            borderLeft: '4px solid var(--accent-indigo)',
+                                            fontSize: '0.88rem',
+                                            lineHeight: 1.5,
+                                        }}>
+                                            <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                                <Sparkles size={14} color="var(--accent-indigo)" />
+                                                {t('aiAdvisory.assessment', 'Clinical Assessment')}
+                                            </strong>
+                                            {aiAdvisory.overallAssessment}
+                                        </div>
+
+                                        {/* Possible Conditions */}
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                                                <Stethoscope size={15} color="var(--accent-indigo)" />
+                                                {t('aiAdvisory.possibleConditions', 'Possible Conditions')}
+                                            </h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                {(aiAdvisory.possibleConditions || []).map((c, i) => (
+                                                    <div key={i} style={{
+                                                        display: 'flex', alignItems: 'flex-start', gap: '0.6rem',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: 'var(--bg-secondary)',
+                                                        borderRadius: 'var(--radius)',
+                                                    }}>
+                                                        <span className={`badge ${c.likelihood === 'High' ? 'badge-red' : c.likelihood === 'Medium' ? 'badge-yellow' : 'badge-green'}`}
+                                                            style={{ fontSize: '0.6rem', flexShrink: 0, marginTop: '2px' }}>
+                                                            {c.likelihood}
+                                                        </span>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{c.condition}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{c.explanation}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Missed Risk Factors */}
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                                                <ShieldQuestion size={15} color="var(--yellow-dark, #b45309)" />
+                                                {t('aiAdvisory.missedRisks', 'Risk Factors to Consider')}
+                                            </h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                {(aiAdvisory.missedRiskFactors || []).map((r, i) => (
+                                                    <div key={i} style={{
+                                                        display: 'flex', alignItems: 'flex-start', gap: '0.6rem',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: 'rgba(245, 158, 11, 0.06)',
+                                                        border: '1px solid rgba(245, 158, 11, 0.15)',
+                                                        borderRadius: 'var(--radius)',
+                                                    }}>
+                                                        <Lightbulb size={14} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{r.factor}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{r.reasoning}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Recommended Actions */}
+                                        <div style={{ marginBottom: '0.75rem' }}>
+                                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                                                <ArrowRight size={15} color="var(--green)" />
+                                                {t('aiAdvisory.recommendedActions', 'Recommended Actions')}
+                                            </h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                {(aiAdvisory.recommendedActions || []).map((a, i) => (
+                                                    <div key={i} style={{
+                                                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: 'var(--bg-secondary)',
+                                                        borderRadius: 'var(--radius)',
+                                                    }}>
+                                                        <span className={`badge ${a.urgency === 'Immediate' ? 'badge-red' : a.urgency === 'Soon' ? 'badge-yellow' : 'badge-green'}`}
+                                                            style={{ fontSize: '0.6rem', flexShrink: 0 }}>
+                                                            {a.urgency}
+                                                        </span>
+                                                        <span style={{ fontSize: '0.82rem' }}>{a.action}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Disclaimer + Retry */}
+                                        <div style={{
+                                            borderTop: '1px solid var(--border-color)',
+                                            paddingTop: '0.75rem',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}>
+                                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic', flex: 1 }}>
+                                                {t('aiAdvisory.disclaimer', 'AI suggestions are not a diagnosis. Always use clinical judgement and consult a doctor for confirmation.')}
+                                            </p>
+                                            <button className="btn btn-ghost btn-sm" onClick={handleGetAIAdvisory} style={{ flexShrink: 0, marginLeft: '0.5rem' }}>
+                                                <RotateCcw size={12} /> {t('aiAdvisory.regenerate', 'Regenerate')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Save & Review Actions */}
                     {!savedVisitId ? (

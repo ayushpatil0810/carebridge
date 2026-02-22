@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllPatients } from '../../services/patientService';
+import { getPatientsByUser } from '../../services/patientService';
 import {
     getVaccinations,
     markVaccineGiven,
@@ -36,7 +36,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 export default function VaccinationTracker() {
-    const { userName } = useAuth();
+    const { user, userName } = useAuth();
     const { t } = useTranslation();
 
     // ── State ──
@@ -62,7 +62,7 @@ export default function VaccinationTracker() {
 
     const loadPatients = async () => {
         try {
-            const all = await getAllPatients();
+            const all = await getPatientsByUser(user.uid);
             setPatients(all);
         } catch (err) {
             console.error('Error loading patients:', err);

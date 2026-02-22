@@ -14,6 +14,8 @@ import {
     timeSince,
     formatDuration,
 } from '../../services/visitService';
+import { getAllNotices, acknowledgeNotice } from '../../services/noticeService';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -40,6 +42,9 @@ import {
     ArrowUpDown,
     Timer,
     RefreshCw,
+    Bell,
+    CheckCircle,
+    MessageCircle,
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
@@ -66,7 +71,14 @@ export default function PHCDashboard() {
     const [allVisits, setAllVisits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('pending');
-    const [activeSection, setActiveSection] = useState('queue'); // queue | villages | asha
+    const [activeSection, setActiveSection] = useState('queue'); // queue | villages | asha | notices
+
+    // Notices state
+    const [notices, setNotices] = useState([]);
+    const [ackNote, setAckNote] = useState('');
+    const [ackingId, setAckingId] = useState(null);
+
+    const { user, userName } = useAuth();
 
     // Filters
     const [filterVillage, setFilterVillage] = useState('');
@@ -81,10 +93,14 @@ export default function PHCDashboard() {
 
     const loadData = async () => {
         try {
-            const all = await getAllVisits();
+            const [all, noticeList] = await Promise.all([
+                getAllVisits(),
+                getAllNotices(),
+            ]);
             setAllVisits(all);
+            setNotices(noticeList);
         } catch (err) {
-            console.error('Error loading visits:', err);
+            console.error('Error loading data:', err);
         } finally {
             setLoading(false);
         }
@@ -318,6 +334,7 @@ export default function PHCDashboard() {
                     { key: 'queue', label: 'Case Queue', icon: ArrowUpDown },
                     { key: 'villages', label: 'Village Overview', icon: MapPin },
                     { key: 'asha', label: 'ASHA Stats', icon: BarChart3 },
+                    { key: 'notices', label: `Notices${notices.filter(n => !n.acknowledged).length > 0 ? ` (${notices.filter(n => !n.acknowledged).length})` : ''}`, icon: Bell },
                 ].map(s => {
                     const Icon = s.icon;
                     return (
@@ -679,6 +696,98 @@ export default function PHCDashboard() {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* =============== NOTICES SECTION =============== */}
+            {activeSection === 'notices' && (
+                <div>
+                    <div className="card">
+                        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                            <Bell size={18} /> Admin Notices
+                        </h3>
+
+                        {notices.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-icon"><Bell size={48} strokeWidth={1} /></div>
+                                <p>No notices from admin.</p>
+                            </div>
+                        ) : (
+                            <div className="stagger-children">
+                                {notices.map(notice => {
+                                    const time = notice.createdAt?.toDate ? notice.createdAt.toDate().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+                                    const ackTime = notice.acknowledgedAt?.toDate ? notice.acknowledgedAt.toDate().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+                                    return (
+                                        <div key={notice.id} className="card" style={{
+                                            marginBottom: '0.75rem',
+                                            padding: '1rem 1.25rem',
+                                            background: 'var(--bg-primary)',
+                                            borderLeft: `4px solid ${notice.acknowledged ? 'var(--green)' : notice.type === 'flag' ? 'var(--alert-red)' : 'var(--accent-saffron)'}`,
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                        <span className={`badge ${notice.type === 'flag' ? 'badge-red' : notice.type === 'comment' ? 'badge-indigo' : 'badge-yellow'}`} style={{ fontSize: '0.65rem' }}>
+                                                            {notice.type === 'flag' ? '🚩 Flag' : notice.type === 'comment' ? '💬 Comment' : '📋 Notice'}
+                                                        </span>
+                                                        <span className="text-muted" style={{ fontSize: '0.75rem' }}>{time} • by {notice.createdByName || 'Admin'}</span>
+                                                    </div>
+                                                    <p style={{ fontWeight: 500, margin: '6px 0' }}>{notice.message}</p>
+                                                    {notice.targetPHC && <span className="text-muted" style={{ fontSize: '0.75rem' }}>Target: {notice.targetPHC}</span>}
+
+                                                    {/* Acknowledgment status */}
+                                                    {notice.acknowledged && (
+                                                        <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(34,197,94,0.06)', borderRadius: '8px', fontSize: '0.8rem' }}>
+                                                            <CheckCircle size={14} style={{ display: 'inline', verticalAlign: 'middle', color: 'var(--green)', marginRight: '6px' }} />
+                                                            <strong>Acknowledged</strong> {ackTime && `on ${ackTime}`}
+                                                            {notice.acknowledgedBy && ` by ${notice.acknowledgedBy}`}
+                                                            {notice.responseNote && (
+                                                                <div style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>
+                                                                    <MessageCircle size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                                                    {notice.responseNote}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Acknowledge button */}
+                                                {!notice.acknowledged && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
+                                                        {ackingId === notice.id ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                                                <input className="input" placeholder="Response note (optional)" value={ackNote} onChange={e => setAckNote(e.target.value)}
+                                                                    style={{ fontSize: '0.78rem', padding: '6px 10px', width: '200px' }} />
+                                                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                                    <button className="btn btn-sm btn-primary" onClick={async () => {
+                                                                        await acknowledgeNotice(notice.id, userName || user?.uid || '', ackNote);
+                                                                        setNotices(prev => prev.map(n => n.id === notice.id
+                                                                            ? { ...n, acknowledged: true, responseNote: ackNote, acknowledgedBy: userName || '' }
+                                                                            : n));
+                                                                        setAckingId(null);
+                                                                        setAckNote('');
+                                                                    }}>
+                                                                        <CheckCircle2 size={13} /> Confirm
+                                                                    </button>
+                                                                    <button className="btn btn-sm btn-secondary" onClick={() => { setAckingId(null); setAckNote(''); }}>
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button className="btn btn-sm btn-success" onClick={() => setAckingId(notice.id)}>
+                                                                <CheckCircle2 size={13} /> Acknowledge
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
