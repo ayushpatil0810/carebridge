@@ -5,6 +5,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { SkeletonFollowUpList } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 import {
     getFollowUpsByUser,
     completeFollowUp,
@@ -32,6 +35,7 @@ import {
 export default function FollowUps() {
     const { t } = useTranslation();
     const { user, userName } = useAuth();
+    const { toast } = useToast();
     const [followUps, setFollowUps] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('today');
@@ -67,6 +71,7 @@ export default function FollowUps() {
     const handleComplete = async (id) => {
         await completeFollowUp(id);
         setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'completed' } : f));
+        toast.success(t('followUp.markedComplete', 'Follow-up marked as completed.'));
     };
 
     const handleReschedule = async (id) => {
@@ -75,6 +80,7 @@ export default function FollowUps() {
         setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'pending', followUpDate: rescheduleDate } : f));
         setRescheduleId(null);
         setRescheduleDate('');
+        toast.success(t('followUp.rescheduled', 'Follow-up rescheduled successfully.'));
     };
 
     const handleSendReminder = async (fu) => {
@@ -92,6 +98,7 @@ export default function FollowUps() {
         });
         await markReminderSent(fu.id);
         setFollowUps(prev => prev.map(f => f.id === fu.id ? { ...f, reminderSent: true } : f));
+        toast.success(t('followUp.reminderSentMsg', 'Reminder sent via WhatsApp.'));
 
         // Open WhatsApp with patient's contact number if available
         const phone = fu.patientContact || '';
@@ -111,11 +118,7 @@ export default function FollowUps() {
     const items = getItems();
 
     if (loading) {
-        return (
-            <div className="loading-spinner">
-                <div><div className="spinner"></div><div className="loading-text">{t('followUp.loadingFollowUps')}</div></div>
-            </div>
-        );
+        return <SkeletonFollowUpList count={5} />;
     }
 
     return (
@@ -188,10 +191,12 @@ export default function FollowUps() {
             {/* List */}
             {items.length === 0 ? (
                 <div className="card">
-                    <div className="empty-state">
-                        <div className="empty-icon"><CalendarCheck size={48} strokeWidth={1} /></div>
-                        <p>{activeTab === 'completed' ? t('followUp.noCompleted') : t('followUp.noFollowUps')}</p>
-                    </div>
+                    <EmptyState
+                        icon={<CalendarCheck size={32} strokeWidth={1.5} />}
+                        title={activeTab === 'completed' ? t('followUp.noCompleted', 'No completed follow-ups') : t('followUp.noFollowUps', "You're all caught up!")}
+                        description={activeTab === 'today' ? t('followUp.noTodayDesc', 'No follow-ups are due today.') : activeTab === 'upcoming' ? t('followUp.noUpcomingDesc', 'No upcoming follow-ups scheduled.') : ''}
+                        colorScheme={activeTab === 'completed' ? 'green' : 'default'}
+                    />
                 </div>
             ) : (
                 <div className="stagger-children">

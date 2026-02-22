@@ -20,6 +20,8 @@ import {
     Syringe,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { SkeletonDashboard } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 
 export default function Dashboard() {
     const [visits, setVisits] = useState([]);
@@ -83,14 +85,7 @@ export default function Dashboard() {
     };
 
     if (loading) {
-        return (
-            <div className="loading-spinner">
-                <div>
-                    <div className="spinner"></div>
-                    <div className="loading-text">{t('dashboard.loadingDashboard')}</div>
-                </div>
-            </div>
-        );
+        return <SkeletonDashboard />;
     }
 
     return (
@@ -230,10 +225,12 @@ export default function Dashboard() {
                 </div>
 
                 {visits.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-icon"><ClipboardList size={48} strokeWidth={1} /></div>
-                        <p>{t('dashboard.noVisitsYet')}</p>
-                    </div>
+                    <EmptyState
+                        icon={<ClipboardList size={32} strokeWidth={1.5} />}
+                        title={t('dashboard.noVisitsYet')}
+                        description={t('dashboard.startByRegistering', 'Register a patient and record your first visit to see it here.')}
+                        action={{ label: t('dashboard.registerPatient'), onClick: () => navigate('/register') }}
+                    />
                 ) : (
                     <div className="cards-grid stagger-children">
                         {visits.slice(0, 20).map((visit) => (

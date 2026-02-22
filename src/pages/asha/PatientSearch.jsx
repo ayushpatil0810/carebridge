@@ -2,12 +2,14 @@
 // Patient Search — Find existing patients
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { searchPatients } from '../../services/patientService';
 import { useTranslation } from 'react-i18next';
 import { Search, Home, MapPin } from 'lucide-react';
+import { SkeletonSearchResults } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 
 export default function PatientSearch() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -18,21 +20,34 @@ export default function PatientSearch() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { t } = useTranslation();
+    const debounceRef = useRef(null);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchTerm.trim()) return;
-
+    const runSearch = useCallback(async (term, field) => {
+        if (!term.trim()) return;
         setLoading(true);
         setSearched(true);
         try {
-            const data = await searchPatients(searchTerm.trim(), searchField, user.uid);
+            const data = await searchPatients(term.trim(), field, user.uid);
             setResults(data);
         } catch (err) {
             console.error('Error searching patients:', err);
         } finally {
             setLoading(false);
         }
+    }, [user]);
+
+    // Debounce: auto-search 400ms after the user stops typing
+    useEffect(() => {
+        if (!searchTerm.trim()) { setResults([]); setSearched(false); return; }
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => runSearch(searchTerm, searchField), 400);
+        return () => clearTimeout(debounceRef.current);
+    }, [searchTerm, searchField, runSearch]);
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        clearTimeout(debounceRef.current);
+        runSearch(searchTerm, searchField);
     };
 
     const getInitial = (name) => {
@@ -87,21 +102,15 @@ export default function PatientSearch() {
             </div>
 
             {/* Results */}
-            {loading && (
-                <div className="loading-spinner">
-                    <div>
-                        <div className="spinner"></div>
-                        <div className="loading-text">{t('messageLog.searchingPatients')}</div>
-                    </div>
-                </div>
-            )}
+            {loading && <SkeletonSearchResults count={3} />}
 
             {!loading && searched && results.length === 0 && (
                 <div className="card">
-                    <div className="empty-state">
-                        <div className="empty-icon"><Search size={48} strokeWidth={1} /></div>
-                        <p>{t('patient.noPatients')}</p>
-                    </div>
+                    <EmptyState
+                        icon={<Search size={32} strokeWidth={1.5} />}
+                        title={t('patient.noPatients')}
+                        description={t('patientSearch.tryDifferentTerm', 'Try searching by a different name, ID, or house number.')}
+                    />
                 </div>
             )}
 

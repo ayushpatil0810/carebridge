@@ -46,6 +46,7 @@ import {
     ArrowRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../../contexts/ToastContext';
 
 const ADVISORY_ICONS = {
     '💧': Droplets,
@@ -64,6 +65,7 @@ export default function VisitEntry() {
     const navigate = useNavigate();
     const { user, userName } = useAuth();
     const { t } = useTranslation();
+    const { toast } = useToast();
 
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -218,8 +220,10 @@ export default function VisitEntry() {
                 createdByName: userName || '',
             });
             setSavedVisitId(visit.id);
+            toast.success(t('visitEntry.visitSaved', 'Visit saved successfully.'));
         } catch (err) {
             console.error('Error saving visit:', err);
+            toast.error(t('visitEntry.visitSaveError', 'Failed to save visit. Please try again.'));
         } finally {
             setSaving(false);
         }
@@ -231,8 +235,12 @@ export default function VisitEntry() {
             await requestPHCReview(savedVisitId, isEmergency, escalationReasons);
             setReviewRequested(true);
             setShowEscalation(false);
+            toast.success(isEmergency
+                ? t('visitEntry.emergencyEscalated', 'Emergency escalation sent to PHC.')
+                : t('visitEntry.reviewRequested', 'PHC review request sent.'));
         } catch (err) {
             console.error('Error requesting review:', err);
+            toast.error(t('visitEntry.reviewError', 'Failed to send review request.'));
         }
     };
 
@@ -259,8 +267,10 @@ export default function VisitEntry() {
                 scheduledByName: userName || '',
             });
             setFollowUpScheduled(true);
+            toast.success(t('visitEntry.followUpScheduled', 'Follow-up scheduled successfully.'));
         } catch (err) {
             console.error('Error scheduling follow-up:', err);
+            toast.error(t('visitEntry.followUpError', 'Failed to schedule follow-up.'));
         } finally {
             setSchedulingFollowUp(false);
         }
@@ -390,7 +400,10 @@ export default function VisitEntry() {
 
                 <div className="form-row-3">
                     <div className="form-group">
-                        <label className="form-label">{t('visit.respiratoryRate')}</label>
+                        <label className="form-label">
+                            {t('visit.respiratoryRate')}
+                            <span className="vital-range-hint">12–20 /min</span>
+                        </label>
                         <input
                             type="number"
                             className="form-input"
@@ -404,7 +417,10 @@ export default function VisitEntry() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">{t('visit.pulseRate')}</label>
+                        <label className="form-label">
+                            {t('visit.pulseRate')}
+                            <span className="vital-range-hint">51–90 bpm</span>
+                        </label>
                         <input
                             type="number"
                             className="form-input"
@@ -418,7 +434,10 @@ export default function VisitEntry() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">{t('visit.temperature')}</label>
+                        <label className="form-label">
+                            {t('visit.temperature')}
+                            <span className="vital-range-hint">36.1–37.2 °C</span>
+                        </label>
                         <input
                             type="number"
                             step="0.1"
@@ -437,6 +456,7 @@ export default function VisitEntry() {
                     <div className="form-group">
                         <label className="form-label">
                             {t('visit.spo2')}
+                            <span className="vital-range-hint">≥ 96%</span>
                             <span className="text-muted" style={{ marginLeft: '0.5rem' }}>{t('visitEntry.optional')}</span>
                         </label>
                         <input
@@ -454,6 +474,7 @@ export default function VisitEntry() {
                     <div className="form-group">
                         <label className="form-label">
                             {t('visit.systolicBP')}
+                            <span className="vital-range-hint">90–140 mmHg</span>
                             <span className="text-muted" style={{ marginLeft: '0.5rem' }}>{t('visitEntry.optional')}</span>
                         </label>
                         <input

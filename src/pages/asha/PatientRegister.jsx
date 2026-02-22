@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Patient Registration — ASHA Worker
 // ============================================================
 
@@ -7,7 +7,39 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { registerPatient } from '../../services/patientService';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../../contexts/ToastContext';
 import { FilePlus, AlertTriangle } from 'lucide-react';
+
+// Validate a single field and return an error string or ''
+function validateField(name, value) {
+    switch (name) {
+        case 'name':
+            if (!value.trim()) return 'Full name is required.';
+            if (value.trim().length < 2) return 'Name must be at least 2 characters.';
+            break;
+        case 'age':
+            if (value === '' || value === null) return 'Age is required.';
+            if (Number(value) < 0 || Number(value) > 150) return 'Enter a valid age (0–150).';
+            break;
+        case 'houseNumber':
+            if (!value.trim()) return 'House number is required.';
+            break;
+        case 'village':
+            if (!value.trim()) return 'Village name is required.';
+            break;
+        case 'contact':
+            if (value && !/^\d{10}$/.test(value.replace(/\s/g, '')))
+                return 'Enter a valid 10-digit mobile number.';
+            break;
+        case 'abhaId':
+            if (value && !/^\d{14}$/.test(value.replace(/\s/g, '')))
+                return 'ABHA ID must be 14 digits.';
+            break;
+        default:
+            break;
+    }
+    return '';
+}
 
 export default function PatientRegister() {
     const [formData, setFormData] = useState({
@@ -19,33 +51,78 @@ export default function PatientRegister() {
         abhaId: '',
         contact: '',
     });
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [touched, setTouched] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { toast } = useToast();
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear error as user types if field was already touched
+        if (touched[name]) {
+            const err = validateField(name, value);
+            setFieldErrors(prev => ({ ...prev, [name]: err }));
+        }
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        const err = validateField(name, value);
+        setFieldErrors(prev => ({ ...prev, [name]: err }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
 
+        // Validate all required fields on submit
+        const requiredFields = ['name', 'age', 'houseNumber', 'village'];
+        const allErrors = {};
+        requiredFields.forEach(f => {
+            const err = validateField(f, formData[f]);
+            if (err) allErrors[f] = err;
+        });
+        // Also validate optional fields if filled
+        ['contact', 'abhaId'].forEach(f => {
+            const err = validateField(f, formData[f]);
+            if (err) allErrors[f] = err;
+        });
+
+        setFieldErrors(allErrors);
+        setTouched({ name: true, age: true, houseNumber: true, village: true, contact: true, abhaId: true });
+
+        if (Object.keys(allErrors).length > 0) return;
+
+        setLoading(true);
         try {
             const patient = await registerPatient({
                 ...formData,
                 createdBy: user?.uid || '',
             });
+            toast.success(t('patientRegister.registered', 'Patient registered successfully!'));
             navigate(`/patient/${patient.id}`);
         } catch (err) {
             console.error('Error registering patient:', err);
-            setError(t('patientRegister.failedRegister'));
+            const msg = t('patientRegister.failedRegister');
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
+    };
+
+    const inputClass = (name) => {
+        const base = 'form-input';
+        if (!touched[name]) return base;
+        if (fieldErrors[name]) return `${base} input-error`;
+        if (formData[name]) return `${base} input-valid`;
+        return base;
     };
 
     return (
@@ -57,7 +134,7 @@ export default function PatientRegister() {
                     </h2>
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     {/* Name */}
                     <div className="form-group">
                         <label className="form-label">
@@ -66,12 +143,17 @@ export default function PatientRegister() {
                         <input
                             type="text"
                             name="name"
-                            className="form-input"
+                            className={inputClass('name')}
                             value={formData.name}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder={t('patientRegister.enterFullName')}
-                            required
                         />
+                        {touched.name && fieldErrors.name && (
+                            <div className="field-error-msg">
+                                <AlertTriangle size={11} /> {fieldErrors.name}
+                            </div>
+                        )}
                     </div>
 
                     {/* Age + Gender */}
@@ -83,14 +165,19 @@ export default function PatientRegister() {
                             <input
                                 type="number"
                                 name="age"
-                                className="form-input"
+                                className={inputClass('age')}
                                 value={formData.age}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder={t('patientRegister.ageInYears')}
                                 min="0"
                                 max="150"
-                                required
                             />
+                            {touched.age && fieldErrors.age && (
+                                <div className="field-error-msg">
+                                    <AlertTriangle size={11} /> {fieldErrors.age}
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -123,15 +210,21 @@ export default function PatientRegister() {
                             <input
                                 type="text"
                                 name="houseNumber"
-                                className="form-input"
+                                className={inputClass('houseNumber')}
                                 value={formData.houseNumber}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder={t('patientRegister.houseNumberExample')}
-                                required
                             />
-                            <div className="form-hint">
-                                {t('patientRegister.sameHouseHint')}
-                            </div>
+                            {touched.houseNumber && fieldErrors.houseNumber ? (
+                                <div className="field-error-msg">
+                                    <AlertTriangle size={11} /> {fieldErrors.houseNumber}
+                                </div>
+                            ) : (
+                                <div className="form-hint">
+                                    {t('patientRegister.sameHouseHint')}
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -141,12 +234,17 @@ export default function PatientRegister() {
                             <input
                                 type="text"
                                 name="village"
-                                className="form-input"
+                                className={inputClass('village')}
                                 value={formData.village}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder={t('patientRegister.enterVillage')}
-                                required
                             />
+                            {touched.village && fieldErrors.village && (
+                                <div className="field-error-msg">
+                                    <AlertTriangle size={11} /> {fieldErrors.village}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -159,11 +257,17 @@ export default function PatientRegister() {
                         <input
                             type="text"
                             name="abhaId"
-                            className="form-input"
+                            className={inputClass('abhaId')}
                             value={formData.abhaId}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder={t('patientRegister.abhaDigits')}
                         />
+                        {touched.abhaId && fieldErrors.abhaId && (
+                            <div className="field-error-msg">
+                                <AlertTriangle size={11} /> {fieldErrors.abhaId}
+                            </div>
+                        )}
                     </div>
 
                     {/* Contact Number */}
@@ -174,11 +278,17 @@ export default function PatientRegister() {
                         <input
                             type="tel"
                             name="contact"
-                            className="form-input"
+                            className={inputClass('contact')}
                             value={formData.contact}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder={t('patientRegister.mobileNumber')}
                         />
+                        {touched.contact && fieldErrors.contact && (
+                            <div className="field-error-msg">
+                                <AlertTriangle size={11} /> {fieldErrors.contact}
+                            </div>
+                        )}
                     </div>
 
                     {error && (
