@@ -104,7 +104,7 @@ export default function MessageTemplates() {
                     <div
                         key={tpl.id}
                         className={`template-card ${selectedTemplate?.id === tpl.id ? 'selected' : ''}`}
-                        onClick={() => { setSelectedTemplate(tpl); setUseMarathi(false); }}
+                        onClick={() => setSelectedTemplate(tpl)}
                     >
                         <div className="template-card-header">
                             <span className="template-icon">{tpl.icon}</span>

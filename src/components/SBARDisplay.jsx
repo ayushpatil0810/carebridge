@@ -101,7 +101,7 @@ export default function SBARDisplay({
                         fontWeight: 600,
                     }}>
                         {aiGenerated ? (
-                            <><Sparkles size={10} /> {t('sbar.aiGenerated', 'AI Generated')}</>
+                            <><Sparkles size={10} /> Sarvam AI 🇮🇳</>
                         ) : (
                             <><AlertTriangle size={10} /> {t('sbar.templateGenerated', 'Template')}</>
                         )}
@@ -165,8 +165,12 @@ export default function SBARDisplay({
                     fontSize: '0.7rem',
                     color: 'var(--text-muted)',
                     fontStyle: 'italic',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
                 }}>
-                    {t('sbar.disclaimer', 'AI-structured summary for documentation purposes only. Not a diagnosis. All decisions remain with the clinician.')}
+                    <span>{t('sbar.disclaimer', 'AI-structured summary for documentation purposes only. Not a diagnosis. All decisions remain with the clinician.')}</span>
+                    <span style={{ fontStyle: 'normal', fontWeight: 600, opacity: 0.6 }}>Powered by Sarvam AI — Proudly Indian 🇮🇳</span>
                 </div>
             )}
 

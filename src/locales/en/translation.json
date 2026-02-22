@@ -516,5 +516,16 @@
     "fallbackUsed": "AI unavailable. Template SBAR saved.",
     "saveError": "SBAR generated but failed to save.",
     "generationFailed": "SBAR generation failed."
+  },
+  "emergency": {
+    "initiateContact": "Initiate Emergency Contact",
+    "contactASHA": "Contact ASHA",
+    "disclaimer": "Structured escalation remains primary. Use emergency contact for urgent coordination only.",
+    "modalTitle": "Emergency Contact",
+    "whatsapp": "WhatsApp",
+    "call": "Call",
+    "initiated": "Emergency contact initiated — logged.",
+    "logFailed": "Contact opened but logging failed.",
+    "emergencyContactsInitiated": "Emergency Contacts Initiated"
   }
 }

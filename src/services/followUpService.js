@@ -54,13 +54,29 @@ export async function scheduleFollowUp({
  * Get all follow-ups for a user (ASHA)
  */
 export async function getFollowUpsByUser(userId) {
-  const q = query(
-    collection(db, COLLECTION),
-    where("scheduledBy", "==", userId),
-    orderBy("followUpDate", "asc"),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("scheduledBy", "==", userId),
+      orderBy("followUpDate", "asc"),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getFollowUpsByUser: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("scheduledBy", "==", userId),
+    );
+    const snap = await getDocs(q);
+    const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) =>
+      (a.followUpDate || "").localeCompare(b.followUpDate || ""),
+    );
+  }
 }
 
 /**

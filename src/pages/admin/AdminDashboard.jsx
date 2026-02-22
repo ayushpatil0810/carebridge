@@ -46,8 +46,10 @@ import {
     RefreshCw,
     TrendingUp,
     Download,
+    Phone,
 } from 'lucide-react';
 import { exportVisitsCSV, exportVillageCaseLoadCSV } from '../../utils/csvExport';
+import { getEmergencyContactCount } from '../../services/emergencyContactService';
 
 // Register Chart.js modules
 ChartJS.register(
@@ -104,6 +106,7 @@ export default function AdminDashboard() {
     const [visits, setVisits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('overview');
+    const [emergencyContactCount, setEmergencyContactCount] = useState(0);
 
     useEffect(() => {
         loadData();
@@ -111,8 +114,12 @@ export default function AdminDashboard() {
 
     const loadData = async () => {
         try {
-            const data = await getAllVisits();
+            const [data, ecCount] = await Promise.all([
+                getAllVisits(),
+                getEmergencyContactCount(),
+            ]);
             setVisits(data);
+            setEmergencyContactCount(ecCount);
         } catch (err) {
             console.error('Error loading admin data:', err);
         } finally {
@@ -322,6 +329,13 @@ export default function AdminDashboard() {
                             <div>
                                 <div className="stat-card-value">{globalStats.referralsApproved}</div>
                                 <div className="stat-card-label">Referrals Approved</div>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-card-icon" style={{ background: 'rgba(220, 38, 38, 0.1)' }}><Phone size={24} color="var(--alert-red)" /></div>
+                            <div>
+                                <div className="stat-card-value">{emergencyContactCount}</div>
+                                <div className="stat-card-label">Emergency Contacts Initiated</div>
                             </div>
                         </div>
                     </div>

@@ -30,7 +30,6 @@ import {
     Stethoscope,
     CheckCircle2,
     AlertTriangle,
-    Filter,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

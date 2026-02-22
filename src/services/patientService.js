@@ -91,49 +91,82 @@ export async function searchPatients(
   if (userId) filters.push(where("createdBy", "==", userId));
 
   let q;
+  let useFallback = false;
 
-  if (searchField === "name") {
-    q = query(
-      collection(db, COLLECTION),
-      ...filters,
-      orderBy("createdAt", "desc"),
+  try {
+    if (searchField === "name") {
+      q = query(
+        collection(db, COLLECTION),
+        ...filters,
+        orderBy("createdAt", "desc"),
+      );
+    } else if (searchField === "patientId") {
+      q = query(
+        collection(db, COLLECTION),
+        ...filters,
+        where("patientId", "==", searchTerm),
+      );
+    } else if (searchField === "houseNumber") {
+      q = query(
+        collection(db, COLLECTION),
+        ...filters,
+        where("houseNumber", "==", searchTerm),
+      );
+    } else if (searchField === "familyId") {
+      q = query(
+        collection(db, COLLECTION),
+        ...filters,
+        where("familyId", "==", searchTerm.toLowerCase()),
+      );
+    } else {
+      q = query(
+        collection(db, COLLECTION),
+        ...filters,
+        orderBy("createdAt", "desc"),
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    let results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // Client-side name filtering
+    if (searchField === "name" && searchTerm) {
+      const term = searchTerm.toLowerCase();
+      results = results.filter((p) => p.name.toLowerCase().includes(term));
+    }
+
+    return results;
+  } catch (err) {
+    // Fallback for missing composite index
+    console.warn(
+      "searchPatients: index likely missing, falling back.",
+      err.message,
     );
-  } else if (searchField === "patientId") {
-    q = query(
-      collection(db, COLLECTION),
-      ...filters,
-      where("patientId", "==", searchTerm),
-    );
-  } else if (searchField === "houseNumber") {
-    q = query(
-      collection(db, COLLECTION),
-      ...filters,
-      where("houseNumber", "==", searchTerm),
-    );
-  } else if (searchField === "familyId") {
-    q = query(
-      collection(db, COLLECTION),
-      ...filters,
-      where("familyId", "==", searchTerm.toLowerCase()),
-    );
-  } else {
-    q = query(
-      collection(db, COLLECTION),
-      ...filters,
-      orderBy("createdAt", "desc"),
-    );
+    q = query(collection(db, COLLECTION), ...filters);
+    const snapshot = await getDocs(q);
+    let results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    if (searchField === "name" && searchTerm) {
+      const term = searchTerm.toLowerCase();
+      results = results.filter((p) => p.name.toLowerCase().includes(term));
+    } else if (searchField === "patientId") {
+      results = results.filter((p) => p.patientId === searchTerm);
+    } else if (searchField === "houseNumber") {
+      results = results.filter((p) => p.houseNumber === searchTerm);
+    } else if (searchField === "familyId") {
+      results = results.filter((p) => p.familyId === searchTerm?.toLowerCase());
+    }
+
+    return results.sort((a, b) => {
+      const ta = a.createdAt?.toDate
+        ? a.createdAt.toDate()
+        : new Date(a.createdAt || 0);
+      const tb = b.createdAt?.toDate
+        ? b.createdAt.toDate()
+        : new Date(b.createdAt || 0);
+      return tb - ta;
+    });
   }
-
-  const snapshot = await getDocs(q);
-  let results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-  // Client-side name filtering
-  if (searchField === "name" && searchTerm) {
-    const term = searchTerm.toLowerCase();
-    results = results.filter((p) => p.name.toLowerCase().includes(term));
-  }
-
-  return results;
 }
 
 /**
@@ -191,11 +224,33 @@ export async function getAllPatients() {
  * Get patients registered by a specific ASHA worker
  */
 export async function getPatientsByUser(userId) {
-  const q = query(
-    collection(db, COLLECTION),
-    where("createdBy", "==", userId),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+      orderBy("createdAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getPatientsByUser: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.createdAt?.toDate
+        ? a.createdAt.toDate()
+        : new Date(a.createdAt || 0);
+      const tb = b.createdAt?.toDate
+        ? b.createdAt.toDate()
+        : new Date(b.createdAt || 0);
+      return tb - ta;
+    });
+  }
 }

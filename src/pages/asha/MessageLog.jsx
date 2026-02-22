@@ -12,7 +12,6 @@ import {
     MessageSquare,
     ExternalLink,
     Search,
-    Filter,
 } from 'lucide-react';
 
 const TYPE_LABELS = {

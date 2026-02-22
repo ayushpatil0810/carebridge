@@ -39,9 +39,18 @@ export default function Dashboard() {
     const loadData = async () => {
         try {
             const [allVisits, clarCases, dueVax] = await Promise.all([
-                getVisitsByUser(user.uid),
-                getClarificationCasesByUser(user.uid),
-                getDueVaccinationsByUser(user.uid),
+                getVisitsByUser(user.uid).catch(err => {
+                    console.error('Error loading visits:', err);
+                    return [];
+                }),
+                getClarificationCasesByUser(user.uid).catch(err => {
+                    console.error('Error loading clarifications:', err);
+                    return [];
+                }),
+                getDueVaccinationsByUser(user.uid).catch(err => {
+                    console.error('Error loading vaccinations:', err);
+                    return [];
+                }),
             ]);
             setVisits(allVisits);
             setClarifications(clarCases);

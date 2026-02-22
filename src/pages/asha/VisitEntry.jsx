@@ -12,6 +12,7 @@ import { validateVital, validateAllVitals } from '../../utils/vitalsValidation';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import { scheduleFollowUp } from '../../services/followUpService';
 import MessageSuggestModal from '../../components/MessageSuggestModal';
+import EmergencyContactModal from '../../components/EmergencyContactModal';
 import VoiceInput from '../../components/VoiceInput';
 import SBARDisplay from '../../components/SBARDisplay';
 import { getAIClinicalAdvisory, isAIAdvisoryAvailable } from '../../services/aiAdvisoryService';
@@ -121,6 +122,9 @@ export default function VisitEntry() {
     const [sbarResult, setSbarResult] = useState(null);
     const [sbarLoading, setSbarLoading] = useState(false);
     const [sbarError, setSbarError] = useState('');
+
+    // Emergency Contact
+    const [showEmergencyContact, setShowEmergencyContact] = useState(false);
 
     // Escalation context
     const ESCALATION_REASONS = [
@@ -1003,6 +1007,9 @@ export default function VisitEntry() {
                                                                     <><FileText size={14} /> {t('sbar.generateBtn', 'Generate SBAR Summary')}</>
                                                                 )}
                                                             </button>
+                                                            <span style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', opacity: 0.7 }}>
+                                                                Powered by Sarvam AI — Proudly Indian 🇮🇳
+                                                            </span>
                                                             {sbarError && (
                                                                 <p style={{ fontSize: '0.75rem', color: 'var(--alert-red)', marginTop: '0.5rem' }}>
                                                                     <AlertTriangle size={12} style={{ verticalAlign: 'middle' }} /> {sbarError}
@@ -1083,6 +1090,22 @@ export default function VisitEntry() {
                                             >
                                                 <MessageSquare size={14} /> {getTriggerTemplate().label}
                                             </button>
+                                        </div>
+                                    )}
+
+                                    {/* Emergency Contact — only for High Risk or Escalated cases */}
+                                    {(news2Result?.riskLevel === 'Red' || news2Result?.riskLevel === 'Yellow' || reviewRequested) && (
+                                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() => setShowEmergencyContact(true)}
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                            >
+                                                <Phone size={14} /> {t('emergency.initiateContact', 'Initiate Emergency Contact')}
+                                            </button>
+                                            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px', fontStyle: 'italic' }}>
+                                                {t('emergency.disclaimer', 'Structured escalation remains primary. Use emergency contact for urgent coordination only.')}
+                                            </p>
                                         </div>
                                     )}
 
@@ -1167,6 +1190,27 @@ export default function VisitEntry() {
                 template={getTriggerTemplate()}
                 patient={patient}
                 visitId={savedVisitId}
+            />
+
+            {/* Emergency Contact Modal */}
+            <EmergencyContactModal
+                isOpen={showEmergencyContact}
+                onClose={() => setShowEmergencyContact(false)}
+                initiatedBy="ASHA"
+                contact={{
+                    name: 'PHC Doctor',
+                    phone: import.meta.env.VITE_PHC_PHONE || '9999999999',
+                }}
+                contactRole="PHC Doctor"
+                visitData={{
+                    visitId: savedVisitId || '',
+                    patientId: patient?.patientId || '',
+                    patientName: patient?.name || '',
+                    news2Score: news2Result?.totalScore ?? null,
+                    riskLevel: news2Result?.riskLevel || '',
+                    village: patient?.village || '',
+                    status: reviewRequested ? 'Pending PHC Review' : 'Completed',
+                }}
             />
         </div>
     );

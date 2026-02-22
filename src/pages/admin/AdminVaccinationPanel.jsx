@@ -89,6 +89,7 @@ export default function AdminVaccinationPanel() {
         }
         return [...list].sort((a, b) => {
             const av = a[sortCol] ?? 0, bv = b[sortCol] ?? 0;
+            if (typeof av === 'string') return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
             return sortDir === 'asc' ? av - bv : bv - av;
         });
     }, [data, filterVillage, searchTerm, sortCol, sortDir]);

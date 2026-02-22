@@ -104,11 +104,10 @@ export function exportPerformanceCSV(stats, type = "asha") {
  */
 export function exportVillageCaseLoadCSV(villageCaseLoad) {
   const columns = [
-    { key: "village", label: "Village" },
-    { key: "total", label: "Total Cases" },
-    { key: "red", label: "Red Cases" },
-    { key: "yellow", label: "Yellow Cases" },
-    { key: "green", label: "Green Cases" },
+    { key: "name", label: "Village" },
+    { key: "totalCases", label: "Total Cases" },
+    { key: "highRisk", label: "High Risk Cases" },
+    { key: "monitoring", label: "Under Monitoring" },
     { key: "pending", label: "Pending Review" },
   ];
   const csv = toCSV(villageCaseLoad, columns);

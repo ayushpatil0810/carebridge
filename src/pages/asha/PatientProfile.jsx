@@ -2,7 +2,7 @@
 // Patient Profile — View patient details + visit history
 // ============================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPatientById, updatePatient } from '../../services/patientService';
@@ -13,12 +13,14 @@ import { toCSV, downloadCSV } from '../../utils/csvExport';
 import Pagination from '../../components/Pagination';
 import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle, Pencil, Save, X, Printer, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function PatientProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const { t } = useTranslation();
+    const { toast } = useToast();
     const [patient, setPatient] = useState(null);
     const [visits, setVisits] = useState([]);
     const [maternityRec, setMaternityRec] = useState(null);
@@ -109,7 +111,7 @@ export default function PatientProfile() {
 
     const handleSave = async () => {
         if (!editData.name || !editData.age || !editData.gender || !editData.village || !editData.houseNumber) {
-            alert(t('patientProfile.fillRequired'));
+            toast.error(t('patientProfile.fillRequired'));
             return;
         }
         setSaving(true);
@@ -120,7 +122,7 @@ export default function PatientProfile() {
             setEditing(false);
         } catch (err) {
             console.error('Error updating patient:', err);
-            alert(t('patientProfile.updateFailed'));
+            toast.error(t('patientProfile.updateFailed'));
         } finally {
             setSaving(false);
         }

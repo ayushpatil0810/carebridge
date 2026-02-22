@@ -2,11 +2,12 @@
 // Case Review — Detailed Patient View + Decision Engine + Audit
 // ============================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { TRIGGER_TEMPLATES } from '../../services/messageService';
 import MessageSuggestModal from '../../components/MessageSuggestModal';
+import EmergencyContactModal from '../../components/EmergencyContactModal';
 import SBARDisplay from '../../components/SBARDisplay';
 import {
     getVisitById,
@@ -47,6 +48,7 @@ import {
     FileText,
     AlertCircle,
     MessageSquare,
+    Phone,
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -77,6 +79,7 @@ export default function CaseReview() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showMsgModal, setShowMsgModal] = useState(false);
+    const [showEmergencyContact, setShowEmergencyContact] = useState(false);
 
     // Decision state
     const [selectedAction, setSelectedAction] = useState('');
@@ -192,7 +195,7 @@ export default function CaseReview() {
         );
     }
 
-    const advisory = visit?.riskLevel ? getRiskAdvisory(visit.riskLevel) : [];
+    const advisory = visit?.riskLevel ? getRiskAdvisory(visit.riskLevel) : null;
     const isAlreadyReviewed = visit?.status !== 'Pending PHC Review';
 
     return (
@@ -432,8 +435,8 @@ export default function CaseReview() {
                             <div className="sbar-section">
                                 <div className="sbar-section-title">RECOMMENDATION</div>
                                 <div className="sbar-section-content">
-                                    {advisory.length > 0 ? (
-                                        advisory.map((item, i) => (
+                                    {advisory?.items?.length > 0 ? (
+                                        advisory.items.map((item, i) => (
                                             <div key={i} className="advisory-item">
                                                 <span className="advisory-icon">
                                                     {advisoryIcons[item.icon] || <CheckCircle2 size={14} />}
@@ -680,6 +683,22 @@ export default function CaseReview() {
                         </div>
                     )}
 
+                    {/* Emergency Contact ASHA — for high-risk or escalated cases */}
+                    {(visit?.riskLevel === 'Red' || visit?.riskLevel === 'Yellow' || visit?.status === 'Pending PHC Review') && (
+                        <div className="card" style={{ marginTop: '1rem', borderLeft: '3px solid var(--alert-red)', textAlign: 'center', padding: '1rem' }}>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => setShowEmergencyContact(true)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                                <Phone size={14} /> Contact ASHA
+                            </button>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px', fontStyle: 'italic', marginBottom: 0 }}>
+                                Structured escalation remains primary. Use emergency contact for urgent coordination only.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Escalation Info */}
                     <div className="card" style={{ marginTop: '1rem' }}>
                         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
@@ -787,6 +806,27 @@ export default function CaseReview() {
                     village: visit?.patientVillage || '',
                 }}
                 visitId={visitId}
+            />
+
+            {/* Emergency Contact Modal */}
+            <EmergencyContactModal
+                isOpen={showEmergencyContact}
+                onClose={() => setShowEmergencyContact(false)}
+                initiatedBy="PHC"
+                contact={{
+                    name: visit?.createdByName || 'ASHA Worker',
+                    phone: import.meta.env.VITE_ASHA_PHONE || '9999999999',
+                }}
+                contactRole="ASHA Worker"
+                visitData={{
+                    visitId: visitId || '',
+                    patientId: visit?.patientId || '',
+                    patientName: visit?.patientName || '',
+                    news2Score: visit?.news2Score ?? null,
+                    riskLevel: visit?.riskLevel || '',
+                    village: visit?.patientVillage || '',
+                    status: visit?.status || '',
+                }}
             />
         </div>
     );

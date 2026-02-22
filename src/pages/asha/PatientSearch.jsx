@@ -21,7 +21,7 @@ export default function PatientSearch() {
     const [resultPage, setResultPage] = useState(1);
     const RESULTS_PER_PAGE = 8;
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, role } = useAuth();
     const { t } = useTranslation();
     const debounceRef = useRef(null);
 
@@ -30,7 +30,9 @@ export default function PatientSearch() {
         setLoading(true);
         setSearched(true);
         try {
-            const data = await searchPatients(term.trim(), field, user.uid);
+            // PHC/admin users search all patients; ASHA workers search only their own
+            const scopeUserId = role === 'asha' ? user.uid : null;
+            const data = await searchPatients(term.trim(), field, scopeUserId);
             setResults(data);
             setResultPage(1);
         } catch (err) {
@@ -38,7 +40,7 @@ export default function PatientSearch() {
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, role]);
 
     // Debounce: auto-search 400ms after the user stops typing
     useEffect(() => {

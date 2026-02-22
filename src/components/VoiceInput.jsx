@@ -164,6 +164,20 @@ export default function VoiceInput({ onTranscript, disabled = false }) {
                         : t('sarvam.voiceBtn', 'Voice')}
             </button>
 
+            {!error && !recording && !processing && (
+                <span style={{
+                    fontSize: '0.62rem',
+                    color: 'var(--accent-indigo)',
+                    fontWeight: 600,
+                    background: 'rgba(99, 102, 241, 0.08)',
+                    padding: '2px 8px',
+                    borderRadius: '99px',
+                    letterSpacing: '0.02em',
+                }}>
+                    Powered by Sarvam AI 🇮🇳
+                </span>
+            )}
+
             {error && (
                 <span style={{
                     fontSize: '0.75rem',

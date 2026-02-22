@@ -6,9 +6,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
     getVillageVaccinationSummary,
-    getVaccineStatus,
-    getDaysOverdue,
-    CHILD_VACCINES,
 } from '../../services/vaccinationService';
 import {
     Syringe,
@@ -21,7 +18,6 @@ import {
     Search,
     X,
     Users,
-    Baby,
     Calendar,
     Activity,
 } from 'lucide-react';

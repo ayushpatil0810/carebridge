@@ -25,8 +25,6 @@ import {
     Clock,
     CheckCircle2,
     Bell,
-    Send,
-    ExternalLink,
     MapPin,
     AlertCircle,
     RefreshCw,
@@ -69,40 +67,55 @@ export default function FollowUps() {
     const overdue = followUps.filter(f => f.followUpDate < today && f.status === 'pending');
 
     const handleComplete = async (id) => {
-        await completeFollowUp(id);
-        setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'completed' } : f));
-        toast.success(t('followUp.markedComplete', 'Follow-up marked as completed.'));
+        try {
+            await completeFollowUp(id);
+            setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'completed' } : f));
+            toast.success(t('followUp.markedComplete', 'Follow-up marked as completed.'));
+        } catch (err) {
+            console.error('Error completing follow-up:', err);
+            toast.error(t('followUp.completeFailed', 'Failed to complete follow-up.'));
+        }
     };
 
     const handleReschedule = async (id) => {
         if (!rescheduleDate) return;
-        await rescheduleFollowUp(id, rescheduleDate);
-        setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'pending', followUpDate: rescheduleDate } : f));
-        setRescheduleId(null);
-        setRescheduleDate('');
-        toast.success(t('followUp.rescheduled', 'Follow-up rescheduled successfully.'));
+        try {
+            await rescheduleFollowUp(id, rescheduleDate);
+            setFollowUps(prev => prev.map(f => f.id === id ? { ...f, status: 'pending', followUpDate: rescheduleDate } : f));
+            setRescheduleId(null);
+            setRescheduleDate('');
+            toast.success(t('followUp.rescheduled', 'Follow-up rescheduled successfully.'));
+        } catch (err) {
+            console.error('Error rescheduling follow-up:', err);
+            toast.error(t('followUp.rescheduleFailed', 'Failed to reschedule follow-up.'));
+        }
     };
 
     const handleSendReminder = async (fu) => {
         const msg = `Reminder: Your follow-up visit is due${fu.followUpDate === today ? ' today' : ` on ${fu.followUpDate}`}. Reason: ${fu.reason || 'General check-up'}. Please visit the health center or contact your ASHA worker.`;
 
-        await logMessage({
-            patientId: fu.patientId,
-            patientName: fu.patientName,
-            messageType: 'followup_reminder',
-            messageText: msg,
-            sentBy: user?.uid || '',
-            sentByName: userName || '',
-            visitId: fu.visitId,
-            channel: 'whatsapp',
-        });
-        await markReminderSent(fu.id);
-        setFollowUps(prev => prev.map(f => f.id === fu.id ? { ...f, reminderSent: true } : f));
-        toast.success(t('followUp.reminderSentMsg', 'Reminder sent via WhatsApp.'));
+        try {
+            await logMessage({
+                patientId: fu.patientId,
+                patientName: fu.patientName,
+                messageType: 'followup_reminder',
+                messageText: msg,
+                sentBy: user?.uid || '',
+                sentByName: userName || '',
+                visitId: fu.visitId,
+                channel: 'whatsapp',
+            });
+            await markReminderSent(fu.id);
+            setFollowUps(prev => prev.map(f => f.id === fu.id ? { ...f, reminderSent: true } : f));
+            toast.success(t('followUp.reminderSentMsg', 'Reminder sent via WhatsApp.'));
 
-        // Open WhatsApp with patient's contact number if available
-        const phone = fu.patientContact || '';
-        window.open(getWhatsAppLink(phone, msg), '_blank');
+            // Open WhatsApp with patient's contact number if available
+            const phone = fu.patientContact || '';
+            window.open(getWhatsAppLink(phone, msg), '_blank');
+        } catch (err) {
+            console.error('Error sending reminder:', err);
+            toast.error(t('followUp.reminderFailed', 'Failed to send reminder.'));
+        }
     };
 
     const getItems = () => {

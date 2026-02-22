@@ -96,13 +96,35 @@ export async function updateVisitSBAR(visitId, sbarData) {
  * Get visits for a specific patient
  */
 export async function getVisitsByPatient(patientDocId) {
-  const q = query(
-    collection(db, COLLECTION),
-    where("patientDocId", "==", patientDocId),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("patientDocId", "==", patientDocId),
+      orderBy("createdAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getVisitsByPatient: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("patientDocId", "==", patientDocId),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.createdAt?.toDate
+        ? a.createdAt.toDate()
+        : new Date(a.createdAt || 0);
+      const tb = b.createdAt?.toDate
+        ? b.createdAt.toDate()
+        : new Date(b.createdAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
@@ -112,14 +134,43 @@ export async function getRecentVisitsByPatient(patientDocId, hoursAgo = 48) {
   const cutoff = Timestamp.fromDate(
     new Date(Date.now() - hoursAgo * 60 * 60 * 1000),
   );
-  const q = query(
-    collection(db, COLLECTION),
-    where("patientDocId", "==", patientDocId),
-    where("createdAt", ">=", cutoff),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("patientDocId", "==", patientDocId),
+      where("createdAt", ">=", cutoff),
+      orderBy("createdAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getRecentVisitsByPatient: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("patientDocId", "==", patientDocId),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results
+      .filter((v) => {
+        const t = v.createdAt?.toDate
+          ? v.createdAt.toDate()
+          : new Date(v.createdAt || 0);
+        return t >= cutoff.toDate();
+      })
+      .sort((a, b) => {
+        const ta = a.createdAt?.toDate
+          ? a.createdAt.toDate()
+          : new Date(a.createdAt || 0);
+        const tb = b.createdAt?.toDate
+          ? b.createdAt.toDate()
+          : new Date(b.createdAt || 0);
+        return tb - ta;
+      });
+  }
 }
 
 /**
@@ -251,53 +302,143 @@ export async function respondToClarification(visitId, response) {
  * Get all pending PHC reviews
  */
 export async function getPendingReviews() {
-  const q = query(
-    collection(db, COLLECTION),
-    where("status", "==", "Pending PHC Review"),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Pending PHC Review"),
+      orderBy("createdAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getPendingReviews: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Pending PHC Review"),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.createdAt?.toDate
+        ? a.createdAt.toDate()
+        : new Date(a.createdAt || 0);
+      const tb = b.createdAt?.toDate
+        ? b.createdAt.toDate()
+        : new Date(b.createdAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
  * Get monitoring cases
  */
 export async function getMonitoringCases() {
-  const q = query(
-    collection(db, COLLECTION),
-    where("status", "==", "Under Monitoring"),
-    orderBy("monitoringStartedAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Under Monitoring"),
+      orderBy("monitoringStartedAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getMonitoringCases: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Under Monitoring"),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.monitoringStartedAt?.toDate
+        ? a.monitoringStartedAt.toDate()
+        : new Date(a.monitoringStartedAt || 0);
+      const tb = b.monitoringStartedAt?.toDate
+        ? b.monitoringStartedAt.toDate()
+        : new Date(b.monitoringStartedAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
  * Get cases awaiting ASHA response (admin/PHC — no user filter)
  */
 export async function getClarificationCases() {
-  const q = query(
-    collection(db, COLLECTION),
-    where("status", "==", "Awaiting ASHA Response"),
-    orderBy("clarificationRequestedAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Awaiting ASHA Response"),
+      orderBy("clarificationRequestedAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn(
+      "getClarificationCases: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("status", "==", "Awaiting ASHA Response"),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.clarificationRequestedAt?.toDate
+        ? a.clarificationRequestedAt.toDate()
+        : new Date(a.clarificationRequestedAt || 0);
+      const tb = b.clarificationRequestedAt?.toDate
+        ? b.clarificationRequestedAt.toDate()
+        : new Date(b.clarificationRequestedAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
  * Get clarification cases for a specific ASHA worker
  */
 export async function getClarificationCasesByUser(userId) {
-  const q = query(
-    collection(db, COLLECTION),
-    where("createdBy", "==", userId),
-    where("status", "==", "Awaiting ASHA Response"),
-    orderBy("clarificationRequestedAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+      where("status", "==", "Awaiting ASHA Response"),
+      orderBy("clarificationRequestedAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    // Fallback: if composite index is missing, query with only filters and sort client-side
+    console.warn(
+      "getClarificationCasesByUser: index likely missing, falling back.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+      where("status", "==", "Awaiting ASHA Response"),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.clarificationRequestedAt?.toDate
+        ? a.clarificationRequestedAt.toDate()
+        : new Date(a.clarificationRequestedAt || 0);
+      const tb = b.clarificationRequestedAt?.toDate
+        ? b.clarificationRequestedAt.toDate()
+        : new Date(b.clarificationRequestedAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
@@ -313,13 +454,36 @@ export async function getAllVisits() {
  * Get visits created by a specific ASHA worker
  */
 export async function getVisitsByUser(userId) {
-  const q = query(
-    collection(db, COLLECTION),
-    where("createdBy", "==", userId),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+      orderBy("createdAt", "desc"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    // Fallback: if composite index is missing, query without orderBy and sort client-side
+    console.warn(
+      "getVisitsByUser: index likely missing, falling back to client-side sort.",
+      err.message,
+    );
+    const q = query(
+      collection(db, COLLECTION),
+      where("createdBy", "==", userId),
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return results.sort((a, b) => {
+      const ta = a.createdAt?.toDate
+        ? a.createdAt.toDate()
+        : new Date(a.createdAt || 0);
+      const tb = b.createdAt?.toDate
+        ? b.createdAt.toDate()
+        : new Date(b.createdAt || 0);
+      return tb - ta;
+    });
+  }
 }
 
 /**
