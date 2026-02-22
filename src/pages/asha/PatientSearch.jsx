@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, Home, MapPin } from 'lucide-react';
 import { SkeletonSearchResults } from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
+import Pagination from '../../components/Pagination';
 
 export default function PatientSearch() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +18,8 @@ export default function PatientSearch() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
+    const [resultPage, setResultPage] = useState(1);
+    const RESULTS_PER_PAGE = 8;
     const navigate = useNavigate();
     const { user } = useAuth();
     const { t } = useTranslation();
@@ -29,6 +32,7 @@ export default function PatientSearch() {
         try {
             const data = await searchPatients(term.trim(), field, user.uid);
             setResults(data);
+            setResultPage(1);
         } catch (err) {
             console.error('Error searching patients:', err);
         } finally {
@@ -115,36 +119,50 @@ export default function PatientSearch() {
             )}
 
             {!loading && results.length > 0 && (
-                <div className="cards-grid stagger-children">
-                    {results.map((patient) => (
-                        <div
-                            key={patient.id}
-                            className="card card-clickable"
-                            onClick={() => navigate(`/patient/${patient.id}`)}
-                            style={{ padding: '1rem 1.25rem' }}
-                        >
-                            <div className="patient-card">
-                                <div className="patient-avatar">
-                                    {getInitial(patient.name)}
-                                </div>
-                                <div className="patient-info">
-                                    <div className="patient-name">{patient.name}</div>
-                                    <div className="patient-meta">
-                                        <span>{t('patientSearch.age')} {patient.age}</span>
-                                        <span>{patient.gender}</span>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Home size={12} /> {patient.houseNumber}</span>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={12} /> {patient.village}</span>
+                <>
+                    <div className="cards-grid stagger-children">
+                        {results.slice((resultPage - 1) * RESULTS_PER_PAGE, resultPage * RESULTS_PER_PAGE).map((patient) => (
+                            <div
+                                key={patient.id}
+                                className="card card-clickable"
+                                onClick={() => navigate(`/patient/${patient.id}`)}
+                                style={{ padding: '1rem 1.25rem' }}
+                            >
+                                <div className="patient-card">
+                                    <div className="patient-avatar">
+                                        {getInitial(patient.name)}
+                                    </div>
+                                    <div className="patient-info">
+                                        <div className="patient-name">{patient.name}</div>
+                                        <div className="patient-meta">
+                                            <span>{t('patientSearch.age')} {patient.age}</span>
+                                            <span>{patient.gender}</span>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Home size={12} /> {patient.houseNumber}</span>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><MapPin size={12} /> {patient.village}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>
+                                            {patient.patientId}
+                                        </span>
                                     </div>
                                 </div>
-                                <div>
-                                    <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>
-                                        {patient.patientId}
-                                    </span>
-                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                    {results.length > RESULTS_PER_PAGE && (
+                        <>
+                            <p className="pagination-info">
+                                Showing {(resultPage - 1) * RESULTS_PER_PAGE + 1}–{Math.min(resultPage * RESULTS_PER_PAGE, results.length)} of {results.length} results
+                            </p>
+                            <Pagination
+                                page={resultPage}
+                                totalPages={Math.ceil(results.length / RESULTS_PER_PAGE)}
+                                onPageChange={setResultPage}
+                            />
+                        </>
+                    )}
+                </>
             )}
         </div>
     );

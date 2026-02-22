@@ -9,7 +9,9 @@ import { getPatientById, updatePatient } from '../../services/patientService';
 import { getVisitsByPatient } from '../../services/visitService';
 import { getActiveMaternityRecord, getGestationalAge, daysUntilEDD } from '../../services/maternityService';
 import { getVaccinations, getVaccineStatus, getDaysOverdue } from '../../services/vaccinationService';
-import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle, Pencil, Save, X } from 'lucide-react';
+import { toCSV, downloadCSV } from '../../utils/csvExport';
+import Pagination from '../../components/Pagination';
+import { Plus, ClipboardList, Flag, MessageSquare, XCircle, ArrowLeft, Baby, Heart, Syringe, ChevronRight, ShieldCheck, ShieldOff, FileText, Activity, AlertTriangle, Pencil, Save, X, Printer, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function PatientProfile() {
@@ -29,6 +31,10 @@ export default function PatientProfile() {
     const [editData, setEditData] = useState({});
     const [saving, setSaving] = useState(false);
 
+    // Visit pagination
+    const VISITS_PER_PAGE = 5;
+    const [visitPage, setVisitPage] = useState(1);
+
     useEffect(() => {
         loadData();
     }, [id]);
@@ -47,6 +53,7 @@ export default function PatientProfile() {
             }
             setPatient(p);
             setVisits(v);
+            setVisitPage(1); // reset pagination on reload
             // Load maternity record for female patients
             if (p && p.gender === 'Female') {
                 try {
@@ -164,6 +171,28 @@ export default function PatientProfile() {
         );
     }
 
+    const handlePrint = () => window.print();
+
+    const handleExportCSV = () => {
+        const columns = [
+            { key: 'createdAt', label: 'Date' },
+            { key: 'chiefComplaint', label: 'Chief Complaint' },
+            { key: 'riskLevel', label: 'Risk Level' },
+            { key: 'news2Score', label: 'NEWS2 Score' },
+            { key: 'status', label: 'Status' },
+            { key: 'respiratoryRate', label: 'RR' },
+            { key: 'pulseRate', label: 'PR' },
+            { key: 'temperature', label: 'Temp' },
+            { key: 'spo2', label: 'SpO2' },
+            { key: 'systolicBP', label: 'Systolic BP' },
+        ];
+        const csv = toCSV(visits, columns);
+        downloadCSV(csv, `${patient?.name?.replace(/\s+/g, '_')}_visits`);
+    };
+
+    const visitTotalPages = Math.ceil(visits.length / VISITS_PER_PAGE);
+    const pagedVisits = visits.slice((visitPage - 1) * VISITS_PER_PAGE, visitPage * VISITS_PER_PAGE);
+
     return (
         <div>
             {/* Patient Details Card */}
@@ -217,6 +246,16 @@ export default function PatientProfile() {
                                 <Baby size={16} /> {t('patientProfile.maternity')}
                             </button>
                         )}
+                        <button className="btn btn-secondary no-print" onClick={handleExportCSV}
+                            title="Export visit history as CSV"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={16} /> Export
+                        </button>
+                        <button className="btn btn-secondary no-print" onClick={handlePrint}
+                            title="Print patient profile"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Printer size={16} /> Print
+                        </button>
                         <button className="btn btn-primary" onClick={() => navigate(`/patient/${id}/visit`)}>
                             <Plus size={16} /> {t('patientProfile.newVisit')}
                         </button>
@@ -454,94 +493,104 @@ export default function PatientProfile() {
                         </button>
                     </div>
                 ) : (
-                    <div className="cards-grid stagger-children">
-                        {visits.map((visit) => (
-                            <div
-                                key={visit.id}
-                                className="card"
-                                style={{ padding: '1rem 1.25rem', background: 'var(--bg-primary)' }}
-                            >
-                                <div className="visit-card">
-                                    <div className="visit-card-left">
-                                        <div className={`visit-risk-dot ${getRiskClass(visit.riskLevel)}`}></div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                                                {visit.chiefComplaint || t('dashboard.noComplaintRecorded')}
-                                            </div>
-                                            <div className="text-muted" style={{ marginTop: '4px' }}>
-                                                {formatTime(visit.createdAt)}
-                                                {visit.symptomDuration && ` • ${t('patientProfile.duration')} ${visit.symptomDuration} ${t('patientProfile.days')}`}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                        {visit.news2Score != null && (
-                                            <span className={`badge badge-${getRiskClass(visit.riskLevel)}`}>
-                                                NEWS2: {visit.news2Score}
-                                            </span>
-                                        )}
-                                        <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
-                                            visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
-                                                visit.emergencyFlag ? 'emergency' : ''
-                                            }`}>
-                                            {visit.status}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* NEWS2 Breakdown */}
-                                {visit.news2Breakdown && visit.news2Breakdown.length > 0 && (
-                                    <div style={{ marginTop: '0.75rem', paddingLeft: '1.5rem' }}>
-                                        <div className="news2-breakdown">
-                                            {visit.news2Breakdown.map((param, idx) => (
-                                                <div key={idx} className="news2-param">
-                                                    <span className="news2-param-name">{param.name}</span>
-                                                    <div className="news2-param-detail">
-                                                        <span className="news2-param-value">{param.value}</span>
-                                                        <span className={`news2-param-score score-${param.score}`}>
-                                                            {param.score} pts
-                                                        </span>
-                                                    </div>
+                    <>
+                        <div className="cards-grid stagger-children">
+                            {pagedVisits.map((visit) => (
+                                <div
+                                    key={visit.id}
+                                    className="card"
+                                    style={{ padding: '1rem 1.25rem', background: 'var(--bg-primary)' }}
+                                >
+                                    <div className="visit-card">
+                                        <div className="visit-card-left">
+                                            <div className={`visit-risk-dot ${getRiskClass(visit.riskLevel)}`}></div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                                    {visit.chiefComplaint || t('dashboard.noComplaintRecorded')}
                                                 </div>
-                                            ))}
+                                                <div className="text-muted" style={{ marginTop: '4px' }}>
+                                                    {formatTime(visit.createdAt)}
+                                                    {visit.symptomDuration && ` • ${t('patientProfile.duration')} ${visit.symptomDuration} ${t('patientProfile.days')}`}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Red Flags */}
-                                {visit.redFlags && visit.redFlags.length > 0 && (
-                                    <div style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                            {visit.redFlags.map((flag, idx) => (
-                                                <span key={idx} className="badge badge-red" style={{ fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                                    <Flag size={10} /> {flag}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            {visit.news2Score != null && (
+                                                <span className={`badge badge-${getRiskClass(visit.riskLevel)}`}>
+                                                    NEWS2: {visit.news2Score}
                                                 </span>
-                                            ))}
+                                            )}
+                                            <span className={`status-badge ${visit.status === 'Pending PHC Review' ? 'pending' :
+                                                visit.status === 'Reviewed' || visit.status === 'Referral Approved' ? 'reviewed' :
+                                                    visit.emergencyFlag ? 'emergency' : ''
+                                                }`}>
+                                                {visit.status}
+                                            </span>
                                         </div>
                                     </div>
-                                )}
 
-                                {/* Doctor Note */}
-                                {visit.doctorNote && (
-                                    <div style={{
-                                        marginTop: '0.75rem',
-                                        paddingLeft: '1.5rem',
-                                        fontSize: '0.85rem',
-                                        color: 'var(--accent-indigo)',
-                                        background: 'rgba(44,62,107,0.04)',
-                                        padding: '0.5rem 0.75rem 0.5rem 1.5rem',
-                                        borderRadius: 'var(--radius-sm)',
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        gap: '6px',
-                                    }}>
-                                        <MessageSquare size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                                        <span><strong>{t('patientProfile.doctorNote')}</strong> {visit.doctorNote}</span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                                    {/* NEWS2 Breakdown */}
+                                    {visit.news2Breakdown && visit.news2Breakdown.length > 0 && (
+                                        <div style={{ marginTop: '0.75rem', paddingLeft: '1.5rem' }}>
+                                            <div className="news2-breakdown">
+                                                {visit.news2Breakdown.map((param, idx) => (
+                                                    <div key={idx} className="news2-param">
+                                                        <span className="news2-param-name">{param.name}</span>
+                                                        <div className="news2-param-detail">
+                                                            <span className="news2-param-value">{param.value}</span>
+                                                            <span className={`news2-param-score score-${param.score}`}>
+                                                                {param.score} pts
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Red Flags */}
+                                    {visit.redFlags && visit.redFlags.length > 0 && (
+                                        <div style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                {visit.redFlags.map((flag, idx) => (
+                                                    <span key={idx} className="badge badge-red" style={{ fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                                        <Flag size={10} /> {flag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Doctor Note */}
+                                    {visit.doctorNote && (
+                                        <div style={{
+                                            marginTop: '0.75rem',
+                                            paddingLeft: '1.5rem',
+                                            fontSize: '0.85rem',
+                                            color: 'var(--accent-indigo)',
+                                            background: 'rgba(44,62,107,0.04)',
+                                            padding: '0.5rem 0.75rem 0.5rem 1.5rem',
+                                            borderRadius: 'var(--radius-sm)',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: '6px',
+                                        }}>
+                                            <MessageSquare size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                                            <span><strong>{t('patientProfile.doctorNote')}</strong> {visit.doctorNote}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {visitTotalPages > 1 && (
+                            <>
+                                <p className="pagination-info">
+                                    Showing {(visitPage - 1) * VISITS_PER_PAGE + 1}–{Math.min(visitPage * VISITS_PER_PAGE, visits.length)} of {visits.length} visits
+                                </p>
+                                <Pagination page={visitPage} totalPages={visitTotalPages} onPageChange={setVisitPage} />
+                            </>
+                        )}
+                    </>
                 )}
             </div>
         </div>

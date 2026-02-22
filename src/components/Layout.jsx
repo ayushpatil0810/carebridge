@@ -4,6 +4,7 @@
 
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from './LanguageSelector';
 import {
@@ -28,11 +29,14 @@ import {
     Baby,
     Stethoscope,
     Syringe,
+    Sun,
+    Moon,
 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Layout() {
     const { userName, role, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
@@ -203,6 +207,14 @@ export default function Layout() {
                         <span className="text-muted" style={{ fontSize: '0.8rem' }}>
                             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                         </span>
+                        <button
+                            className="theme-toggle-btn no-print"
+                            onClick={toggleTheme}
+                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                        >
+                            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
                     </div>
                 </header>
 

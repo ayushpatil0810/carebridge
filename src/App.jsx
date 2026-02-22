@@ -5,6 +5,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import IdleTimeoutGuard from './components/IdleTimeoutGuard';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/asha/Dashboard';
@@ -120,11 +123,16 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <IdleTimeoutGuard />
+              <AppRoutes />
+            </ErrorBoundary>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
